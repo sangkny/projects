@@ -1,0 +1,259 @@
+# ============================================================
+# docker-compose.dev.yml
+# WSL2 + Docker 개발 환경
+# LM Studio (Windows, 포트 8000) 연결 — Ollama 컨테이너 불필요
+# OpenClaw + Paperclip + PostgreSQL + Redis
+# MEDI-IOT + AutoNoGaDa + CoOps
+# ============================================================
+# 실행: docker compose -f docker-compose.dev.yml up -d
+# 중지: docker compose -f docker-compose.dev.yml down
+# 로그: docker compose -f docker-compose.dev.yml logs -f
+# ============================================================
+
+
+# ============================================================
+# 공통 LLM 환경변수 (모든 서비스에서 재사용)
+# ============================================================
+x-llm-env: &llm-env
+  # ── Provider 선택 (local | openai | anthropic | google | azure) ──
+  LLM_PROVIDER: ${LLM_PROVIDER:-local}
+  LLM_EMBED_PROVIDER: ${LLM_EMBED_PROVIDER:-local}
+  LLM_FALLBACK_ENABLED: "true"
+
+  # ── Local Provider — LM Studio (Windows 포트 8000) ──
+  LOCAL_BASE_URL: http://host.docker.internal:8000/v1
+  LOCAL_API_KEY: lm-studio
+  LOCAL_FAST_MODEL: google/gemma-4-e4b
+  LOCAL_HEAVY_MODEL: google/gemma-4-26b-a4b
+  LOCAL_VISION_MODEL: google/gemma-4-26b-a4b
+  LOCAL_EMBED_MODEL: text-embedding-nomic-embed-text-v1.5
+  LOCAL_BACKUP_MODEL: mistralai/mistral-7b-instruct-v0.3
+
+  # ── Cloud API Keys (운영 시 .env 파일에서 주입) ──
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+  AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+  AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+
+# 공통 DB/Redis 환경변수
+x-db-env: &db-env
+  DATABASE_URL: postgresql://dev:dev@postgres:5432/mediiot
+  REDIS_URL: redis://redis:6379
+  PYTHONUNBUFFERED: "1"
+
+# 공통 의존성
+x-depends-infra: &depends-infra
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+
+# host.docker.internal → Windows 호스트 연결 (WSL Linux 필수 설정)
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+
+  # ============================================================
+  # 1. shared-libraries (공통 라이브러리 — 개발/테스트)
+  # ============================================================
+  shared-libs:
+    build:
+      context: ./shared-libraries
+      dockerfile: Dockerfile
+    container_name: shared-libs-dev
+    ports:
+      - "8004:8000"
+    volumes:
+      - ./shared-libraries:/app
+    environment:
+      <<: [*llm-env, *db-env]
+    depends_on:
+      <<: *depends-infra
+    <<: *extra-hosts
+    networks:
+      - mediiot-network
+    command: pytest tests/ -v --tb=short
+    restart: "no"  # 테스트 컨테이너는 자동 재시작 안 함
+
+  # ============================================================
+  # 2. MEDI-IOT EyeCare API (Phase 1 메인)
+  # ============================================================
+  medi-iot-api:
+    build:
+      context: ./MEDI-IOT-EyeCare
+      dockerfile: Dockerfile
+    container_name: medi-iot-api-dev
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./MEDI-IOT-EyeCare:/app
+    environment:
+      <<: [*llm-env, *db-env]
+      SERVICE_NAME: medi-iot
+      # MEDI-IOT는 VISION 모델 우선 (안과 이미지 분석)
+      LLM_DEFAULT_ROLE: vision
+    depends_on:
+      <<: *depends-infra
+    <<: *extra-hosts
+    networks:
+      - mediiot-network
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  # ============================================================
+  # 3. OpenClaw (Agent Runtime — Node.js)
+  # ============================================================
+  openclaw:
+    image: node:18-alpine
+    container_name: openclaw-runtime
+    working_dir: /app/openclaw
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./openclaw:/app/openclaw
+      - /app/openclaw/node_modules
+    environment:
+      NODE_ENV: development
+      # LM Studio 연결 (OpenClaw에서 직접 호출 시)
+      LLM_BASE_URL: http://host.docker.internal:8000/v1
+      LLM_API_KEY: lm-studio
+      LLM_FAST_MODEL: google/gemma-4-e4b
+      # 내부 서비스 연결
+      PAPERCLIP_HOST: http://paperclip:8080
+      DATABASE_URL: postgresql://dev:dev@postgres:5432/mediiot
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      <<: *depends-infra
+    <<: *extra-hosts
+    networks:
+      - mediiot-network
+    command: npm run dev
+    restart: unless-stopped
+
+  # ============================================================
+  # 4. Paperclip (Orchestration — Python)
+  # ============================================================
+  paperclip:
+    image: python:3.11-slim
+    container_name: paperclip-orchestrator
+    working_dir: /app/paperclip
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./paperclip:/app/paperclip
+      - ./shared-libraries:/app/shared-libraries  # shared-libs 공유
+    environment:
+      <<: [*llm-env, *db-env]
+      SERVICE_NAME: paperclip
+      OPENCLAW_HOST: http://openclaw:3000
+      PYTHONPATH: /app
+    depends_on:
+      <<: *depends-infra
+    <<: *extra-hosts
+    networks:
+      - mediiot-network
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+    restart: unless-stopped
+
+  # ============================================================
+  # 5. PostgreSQL
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-dev
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: mediiot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sh:/docker-entrypoint-initdb.d/init.sh  # 초기화 스크립트
+    networks:
+      - mediiot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d mediiot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================================
+  # 6. Redis
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mediiot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================================
+  # 7. AutoNoGaDa (Month 2+ — 주석 해제하여 활성화)
+  # ============================================================
+  # autonaogada-api:
+  #   build:
+  #     context: ./AutoNoGaDa-ADK
+  #     dockerfile: Dockerfile
+  #   container_name: autonaogada-api-dev
+  #   ports:
+  #     - "8002:8000"
+  #   environment:
+  #     <<: [*llm-env, *db-env]
+  #     SERVICE_NAME: autonaogada
+  #   depends_on:
+  #     <<: *depends-infra
+  #   <<: *extra-hosts
+  #   networks:
+  #     - mediiot-network
+  #   command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ============================================================
+  # 8. CoOps (Month 1+ — 주석 해제하여 활성화)
+  # ============================================================
+  # coops-api:
+  #   build:
+  #     context: ./CoOps-Platform
+  #     dockerfile: Dockerfile
+  #   container_name: coops-api-dev
+  #   ports:
+  #     - "8003:8000"
+  #   environment:
+  #     <<: [*llm-env, *db-env]
+  #     SERVICE_NAME: coops
+  #   depends_on:
+  #     <<: *depends-infra
+  #   <<: *extra-hosts
+  #   networks:
+  #     - mediiot-network
+  #   command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  postgres_data:
+    name: mediiot-postgres-data
+  redis_data:
+    name: mediiot-redis-data
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  mediiot-network:
+    name: mediiot-dev-network
+    driver: bridge
