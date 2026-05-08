@@ -75,8 +75,8 @@ services:
     <<: *extra-hosts
     networks:
       - mediiot-network
-    command: pytest tests/ -v --tb=short
-    restart: "no"  # 테스트 컨테이너는 자동 재시작 안 함
+    command: sleep infinity   # 컨테이너 유지 — exec으로 직접 명령 실행
+    restart: "no"
 
   # ============================================================
   # 2. MEDI-IOT EyeCare API (Phase 1 메인)
