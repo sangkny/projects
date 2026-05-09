@@ -1,3 +1,6 @@
 [submodule "shared-libraries"]
 	path = shared-libraries
 	url = https://github.com/sangkny/shared-libraries.git
+[submodule "MEDI-IOT-EyeCare"]
+	path = MEDI-IOT-EyeCare
+	url = https://github.com/sangkny/MEDI-IOT-EyeCare.git
