@@ -231,24 +231,29 @@ services:
     restart: unless-stopped
 
   # ============================================================
-  # 8. CoOps (Month 1+ — 주석 해제하여 활성화)
+  # 8. CoOps Platform (Week 5 Day 3 — 포트 8003)
   # ============================================================
-  # coops-api:
-  #   build:
-  #     context: ./CoOps-Platform
-  #     dockerfile: Dockerfile
-  #   container_name: coops-api-dev
-  #   ports:
-  #     - "8003:8000"
-  #   environment:
-  #     <<: [*llm-env, *db-env]
-  #     SERVICE_NAME: coops
-  #   depends_on:
-  #     <<: *depends-infra
-  #   <<: *extra-hosts
-  #   networks:
-  #     - mediiot-network
-  #   command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  coops-api:
+    build:
+      context: ./CoOps-Platform
+      dockerfile: Dockerfile
+    container_name: coops-api-dev
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./CoOps-Platform:/app
+      - ./shared-libraries:/app/shared-libraries
+    environment:
+      <<: [*llm-env, *db-env]
+      SERVICE_NAME: coops
+      PYTHONPATH: /app/shared-libraries:/app
+    depends_on:
+      <<: *depends-infra
+    <<: *extra-hosts
+    networks:
+      - mediiot-network
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
 
 # ============================================================
 # Volumes

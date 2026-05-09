@@ -7,3 +7,6 @@
 [submodule "AutoNoGaDa-ADK"]
 	path = AutoNoGaDa-ADK
 	url = https://github.com/sangkny/AutoNoGaDa-ADK.git
+[submodule "CoOps-Platform"]
+	path = CoOps-Platform
+	url = https://github.com/sangkny/CoOps-Platform.git
