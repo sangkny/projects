@@ -89,12 +89,14 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./MEDI-IOT-EyeCare:/app
+      - ./MEDI-IOT-EyeCare:/app                    # 앱 소스 (hot-reload)
+      - ./shared-libraries:/app/shared-libraries    # shared-libs 직접 마운트
     environment:
       <<: [*llm-env, *db-env]
       SERVICE_NAME: medi-iot
-      # MEDI-IOT는 VISION 모델 우선 (안과 이미지 분석)
       LLM_DEFAULT_ROLE: vision
+      # shared-libraries 절대 import 가능하도록 PYTHONPATH 설정
+      PYTHONPATH: /app/shared-libraries:/app
     depends_on:
       <<: *depends-infra
     <<: *extra-hosts
