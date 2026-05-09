@@ -206,11 +206,11 @@ services:
   # ============================================================
   # 7. AutoNoGaDa ADK — 코드 자동화 (Week 4, 포트 8002)
   # ============================================================
-  autonaogada-api:
+  autonogada-api:
     build:
       context: ./AutoNoGaDa-ADK
       dockerfile: Dockerfile
-    container_name: autonaogada-api-dev
+    container_name: autonogada-api-dev
     ports:
       - "8002:8000"
     volumes:
@@ -218,7 +218,7 @@ services:
       - ./shared-libraries:/app/shared-libraries
     environment:
       <<: [*llm-env, *db-env]
-      SERVICE_NAME: autonaogada
+      SERVICE_NAME: autonogada
       PYTHONPATH: /app/shared-libraries:/app
     depends_on:
       <<: *depends-infra
