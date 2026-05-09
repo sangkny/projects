@@ -1,22 +1,41 @@
-# AutoNoGaDa-ADK (시작 준비)
+# AutoNoGaDa-ADK
 
-코드 생성·Ontology 검증·PIPELINE 오케스트레이션을 위한 별도 FastAPI 마이크로서비스를 둘 예정입니다.
+코드 자동화 서비스 — **shared-libraries** 의 `Orchestrator(PIPELINE)` + `OntologyValidator(SOFTWARE)` 를 FastAPI 로 노출합니다.
 
-## 다음 단계 (WEEK4_PROMPTS.md 프롬프트 4-3-1)
+## 로컬 개발 (Docker)
 
-1. GitHub 에 **Public** 저장소 `AutoNoGaDa-ADK` 생성 (소유자: sangkny).
-2. WSL 또는 Windows에서 디렉터리 생성 후 `git clone` 또는 `git init` + 원격 추가.
-3. 아래 초기 디렉터리를 채워 넣음:
-   - `Dockerfile`
-   - `requirements.txt`
-   - `main.py`, `config.py`, `database.py`
-   - `models/software.py`, `schemas/software.py`
-   - `api/health.py`, `api/tasks.py`, `api/pipeline.py`
-   - `services/code_analyzer.py`, `services/pipeline_runner.py`
-4. `shared-libraries` 는 현재처럼 **볼륨 마운트** 또는 GIT submodule 로 연결하여  
-   `Orchestrator(PIPELINE)` + `OntologyValidator(SOFTWARE)` 를 사용합니다.
-5. `projects` 레포에는 이 폴더를 submodule 로 등록 (기존 MEDI-IOT-EyeCare 와 동일 패턴).
+`projects/docker-compose.dev.yml` 에서 **포트 8002 (호스트) → 8000 (컨테이너)** 로 매핑됩니다.
 
-## 현재 상태
+```bash
+cd projects
+docker compose -f docker-compose.dev.yml up -d autonaogada-api
+curl http://localhost:8002/health
+curl http://localhost:8002/docs
+```
 
-Week 4 Day 1~2 까지는 **MEDI-IOT EyeCare** 중심으로 작업합니다. 본 디렉터리는 Day 3 이전까지 **플레이스홀더 및 체크리스트** 역할입니다.
+## API 요약
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/health` | DB 연결 포함 헬스 |
+| POST | `/api/v1/tasks/` | 코드 작업 등록 |
+| GET | `/api/v1/tasks/{id}` | 작업 조회 |
+| GET | `/api/v1/tasks/` | 최근 작업 목록 |
+| POST | `/api/v1/pipeline/run` | `{ "task_id": "..." }` 로 PIPELINE 실행 |
+| POST | `/api/v1/pipeline/run-inline` | 설명만으로 바로 실행(데모) |
+
+## 데이터베이스
+
+개발 편의상 **MEDI-IOT와 동일 PostgreSQL(`mediiot`)** 에 `software_*` 테이블을 생성합니다 (`create_all`).
+
+운영 시 전용 DB/스키마 분리 권장.
+
+## 환경 변수
+
+`x-llm-env` / `x-db-env` 는 `docker-compose.dev.yml` 에서 MEDI-IOT 와 동일하게 주입됩니다  
+(`LOCAL_BASE_URL` → host.docker.internal LM Studio).
+
+## Git 원격 (Submodule)
+
+상위 `projects` 레포에서는 본 디렉터리를 Git submodule 로 등록합니다.  
+원격 저장소: `https://github.com/sangkny/AutoNoGaDa-ADK`
