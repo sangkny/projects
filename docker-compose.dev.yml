@@ -164,7 +164,7 @@ services:
   # 5. PostgreSQL
   # ============================================================
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15   # pgvector 확장 포함 (Week 3 업그레이드)
     container_name: postgres-dev
     ports:
       - "5432:5432"
