@@ -4,3 +4,6 @@
 [submodule "MEDI-IOT-EyeCare"]
 	path = MEDI-IOT-EyeCare
 	url = https://github.com/sangkny/MEDI-IOT-EyeCare.git
+[submodule "AutoNoGaDa-ADK"]
+	path = AutoNoGaDa-ADK
+	url = https://github.com/sangkny/AutoNoGaDa-ADK.git
