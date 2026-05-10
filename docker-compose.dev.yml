@@ -41,6 +41,7 @@ x-db-env: &db-env
   DATABASE_URL: postgresql://dev:dev@postgres:5432/mediiot
   REDIS_URL: redis://redis:6379
   PYTHONUNBUFFERED: "1"
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-week7-dev-secret-not-for-prod}
 
 # 공통 의존성
 x-depends-infra: &depends-infra
