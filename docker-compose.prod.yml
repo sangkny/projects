@@ -26,6 +26,7 @@ x-db-env: &db-env
   DATABASE_URL: postgresql://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/${POSTGRES_DB:-mediiot}
   REDIS_URL: redis://redis:6379
   PYTHONUNBUFFERED: "1"
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-prod}
 
 x-depends-infra: &depends-infra
   postgres:
@@ -92,6 +93,12 @@ services:
       - mediiot-prod-network
     logging: *json-logging
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: always
 
   autonogada-api:
@@ -115,6 +122,12 @@ services:
       - mediiot-prod-network
     logging: *json-logging
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: always
 
   coops-api:
@@ -140,6 +153,12 @@ services:
     command: >
       sh -c "python -m alembic upgrade head &&
              python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     restart: always
 
   postgres:
@@ -208,6 +227,12 @@ services:
     networks:
       - mediiot-prod-network
     logging: *json-logging
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8090/aggregate || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 20s
     <<: *deploy-api
     restart: always
 
@@ -226,6 +251,12 @@ services:
     networks:
       - mediiot-prod-network
     logging: *json-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
