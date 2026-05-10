@@ -257,6 +257,45 @@ services:
              python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     restart: unless-stopped
 
+  # ============================================================
+  # 9. Health aggregator (Nginx /api/health 집계)
+  # ============================================================
+  health-aggregator:
+    build:
+      context: ./health-aggregator
+      dockerfile: Dockerfile
+    container_name: health-aggregator-dev
+    environment:
+      BACKEND_MEDICAL_URL: http://medi-iot-api:8000/health
+      BACKEND_CODE_URL: http://autonogada-api:8000/health
+      BACKEND_OPS_URL: http://coops-api:8000/health
+    depends_on:
+      - medi-iot-api
+      - autonogada-api
+      - coops-api
+    networks:
+      - mediiot-network
+    restart: unless-stopped
+
+  # ============================================================
+  # 10. API Gateway — Nginx (:80 → /api/medical|code|ops/, /api/health)
+  # ============================================================
+  api-gateway:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: api-gateway-dev
+    ports:
+      - "80:80"
+    depends_on:
+      - health-aggregator
+      - medi-iot-api
+      - autonogada-api
+      - coops-api
+    networks:
+      - mediiot-network
+    restart: unless-stopped
+
 # ============================================================
 # Volumes
 # ============================================================

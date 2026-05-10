@@ -1,0 +1,245 @@
+# ============================================================
+# docker-compose.prod.yml — 운영 지향 스택
+# 소스는 개발과 동일하게 바인드 마운트 가능(레포 구조 유지).
+# 엄격 무볼륨 배포는 이미지에 shared-libraries 를 COPY 하는 Dockerfile 로 전환.
+# 실행: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# ============================================================
+
+x-llm-env: &llm-env
+  LLM_PROVIDER: ${LLM_PROVIDER:-local}
+  LLM_EMBED_PROVIDER: ${LLM_EMBED_PROVIDER:-}
+  LLM_FALLBACK_ENABLED: ${LLM_FALLBACK_ENABLED:-true}
+  LOCAL_BASE_URL: ${LOCAL_BASE_URL:-http://host.docker.internal:8000/v1}
+  LOCAL_API_KEY: ${LOCAL_API_KEY:-lm-studio}
+  LOCAL_FAST_MODEL: ${LOCAL_FAST_MODEL:-google/gemma-4-e4b}
+  LOCAL_HEAVY_MODEL: ${LOCAL_HEAVY_MODEL:-google/gemma-4-26b-a4b}
+  LOCAL_VISION_MODEL: ${LOCAL_VISION_MODEL:-google/gemma-4-26b-a4b}
+  LOCAL_EMBED_MODEL: ${LOCAL_EMBED_MODEL:-text-embedding-nomic-embed-text-v1.5}
+  LOCAL_BACKUP_MODEL: ${LOCAL_BACKUP_MODEL:-mistralai/mistral-7b-instruct-v0.3}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+  AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+  AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+
+x-db-env: &db-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/${POSTGRES_DB:-mediiot}
+  REDIS_URL: redis://redis:6379
+  PYTHONUNBUFFERED: "1"
+
+x-depends-infra: &depends-infra
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+x-logging: &json-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-deploy-api: &deploy-api
+  deploy:
+    resources:
+      limits:
+        cpus: "2.0"
+        memory: 1G
+      reservations:
+        cpus: "0.25"
+        memory: 256M
+
+services:
+  shared-libs:
+    build:
+      context: ./shared-libraries
+      dockerfile: Dockerfile
+    container_name: shared-libs-prod
+    environment:
+      <<: [*llm-env, *db-env]
+    depends_on:
+      <<: *depends-infra
+    <<: [*extra-hosts, *deploy-api]
+    networks:
+      - mediiot-prod-network
+    logging: *json-logging
+    command: sleep infinity
+    restart: always
+
+  medi-iot-api:
+    build:
+      context: ./MEDI-IOT-EyeCare
+      dockerfile: Dockerfile
+    container_name: medi-iot-api-prod
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./MEDI-IOT-EyeCare:/app
+      - ./shared-libraries:/app/shared-libraries
+    environment:
+      <<: [*llm-env, *db-env]
+      SERVICE_NAME: medi-iot
+      LLM_DEFAULT_ROLE: vision
+      PYTHONPATH: /app/shared-libraries:/app
+    depends_on:
+      <<: *depends-infra
+    <<: [*extra-hosts, *deploy-api]
+    networks:
+      - mediiot-prod-network
+    logging: *json-logging
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    restart: always
+
+  autonogada-api:
+    build:
+      context: ./AutoNoGaDa-ADK
+      dockerfile: Dockerfile
+    container_name: autonogada-api-prod
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./AutoNoGaDa-ADK:/app
+      - ./shared-libraries:/app/shared-libraries
+    environment:
+      <<: [*llm-env, *db-env]
+      SERVICE_NAME: autonogada
+      PYTHONPATH: /app/shared-libraries:/app
+    depends_on:
+      <<: *depends-infra
+    <<: [*extra-hosts, *deploy-api]
+    networks:
+      - mediiot-prod-network
+    logging: *json-logging
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    restart: always
+
+  coops-api:
+    build:
+      context: ./CoOps-Platform
+      dockerfile: Dockerfile
+    container_name: coops-api-prod
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./CoOps-Platform:/app
+      - ./shared-libraries:/app/shared-libraries
+    environment:
+      <<: [*llm-env, *db-env]
+      SERVICE_NAME: coops
+      PYTHONPATH: /app/shared-libraries:/app
+    depends_on:
+      <<: *depends-infra
+    <<: [*extra-hosts, *deploy-api]
+    networks:
+      - mediiot-prod-network
+    logging: *json-logging
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+    restart: always
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: postgres-prod
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
+      POSTGRES_DB: ${POSTGRES_DB:-mediiot}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./init.sh:/docker-entrypoint-initdb.d/init.sh
+    networks:
+      - mediiot-prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-mediiot}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *json-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - mediiot-prod-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *json-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: always
+
+  health-aggregator:
+    build:
+      context: ./health-aggregator
+      dockerfile: Dockerfile
+    container_name: health-aggregator-prod
+    environment:
+      BACKEND_MEDICAL_URL: http://medi-iot-api:8000/health
+      BACKEND_CODE_URL: http://autonogada-api:8000/health
+      BACKEND_OPS_URL: http://coops-api:8000/health
+    depends_on:
+      - medi-iot-api
+      - autonogada-api
+      - coops-api
+    networks:
+      - mediiot-prod-network
+    logging: *json-logging
+    <<: *deploy-api
+    restart: always
+
+  api-gateway:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: api-gateway-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - health-aggregator
+      - medi-iot-api
+      - autonogada-api
+      - coops-api
+    networks:
+      - mediiot-prod-network
+    logging: *json-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    restart: always
+
+volumes:
+  postgres_data_prod:
+    name: mediiot-postgres-data-prod
+  redis_data_prod:
+    name: mediiot-redis-data-prod
+
+networks:
+  mediiot-prod-network:
+    name: mediiot-prod-network
+    driver: bridge
