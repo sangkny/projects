@@ -37,6 +37,18 @@ x-llm-env: &llm-env
   CHUNKING_HISTORY_MAX_TOKENS: ${CHUNKING_HISTORY_MAX_TOKENS:-8000}
   CHUNKING_CONVERSATION_RECENT_TURNS: ${CHUNKING_CONVERSATION_RECENT_TURNS:-5}
 
+  # Step 6 — LLM 요약 레이어 (옵션, 기본 OFF). 1로 켜면 Reviewer trim 의
+  # fallback='chars' 케이스에서 light 모델(LLM_SUMMARY_MODEL)로 1-call 요약을
+  # 시도한다. 운영자가 LM Studio num_ctx 를 ≥ 4096 으로 늘릴 수 없는 환경의
+  # 보조 가드. 자세한 정책은 book §16.10.7 / env-reference.md 참고.
+  LLM_SUMMARY_LAYER_ENABLED: ${LLM_SUMMARY_LAYER_ENABLED:-0}
+  LLM_SUMMARY_TRIGGER: ${LLM_SUMMARY_TRIGGER:-chars}
+  LLM_SUMMARY_MAX_TOKENS: ${LLM_SUMMARY_MAX_TOKENS:-512}
+  LLM_SUMMARY_MODEL: ${LLM_SUMMARY_MODEL:-google/gemma-4-e4b}
+  LLM_SUMMARY_BASE_URL: ${LLM_SUMMARY_BASE_URL:-http://host.docker.internal:8000/v1}
+  LLM_SUMMARY_API_KEY: ${LLM_SUMMARY_API_KEY:-lm-studio}
+  LLM_SUMMARY_TIMEOUT: ${LLM_SUMMARY_TIMEOUT:-30}
+
   # ── Cloud API Keys (운영 시 .env 파일에서 주입) ──
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
