@@ -29,6 +29,14 @@ x-llm-env: &llm-env
   LOCAL_EMBED_MODEL: text-embedding-nomic-embed-text-v1.5
   LOCAL_BACKUP_MODEL: mistralai/mistral-7b-instruct-v0.3
 
+  # Orchestrator / 컨텍스트 예산 · 청킹 (.env 또는 export 로 덮어쓰기 가능)
+  ORCH_COMPACT_CONTEXT: ${ORCH_COMPACT_CONTEXT:-1}
+  ORCH_CONTEXT_MAX_TOKENS: ${ORCH_CONTEXT_MAX_TOKENS:-12000}
+  CHUNKING_MAX_PARALLEL: ${CHUNKING_MAX_PARALLEL:-4}
+  CHUNKING_OVERLAP_RATIO: ${CHUNKING_OVERLAP_RATIO:-0.15}
+  CHUNKING_HISTORY_MAX_TOKENS: ${CHUNKING_HISTORY_MAX_TOKENS:-8000}
+  CHUNKING_CONVERSATION_RECENT_TURNS: ${CHUNKING_CONVERSATION_RECENT_TURNS:-5}
+
   # ── Cloud API Keys (운영 시 .env 파일에서 주입) ──
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -114,7 +122,7 @@ services:
     container_name: openclaw-runtime
     working_dir: /app/openclaw
     ports:
-      - "3000:3000"
+      - "3010:3000"
     volumes:
       - ./openclaw:/app/openclaw
       - /app/openclaw/node_modules
@@ -207,6 +215,20 @@ services:
   # ============================================================
   # 6b. 코드 샌드박스 — TypeScript tsc / rustc (Phase 2 W4)
   # ============================================================
+  # ============================================================
+  # Dash — React 통합 관제 (Phase 2 W9 · 내부 :80 직결 + 게이트웨이 /dashboard/)
+  # ============================================================
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: dashboard-dev
+    ports:
+      - "3000:80"
+    networks:
+      - mediiot-network
+    restart: unless-stopped
+
   code-sandbox:
     build:
       context: ./code-sandbox
@@ -296,7 +318,62 @@ services:
     restart: unless-stopped
 
   # ============================================================
-  # 10. API Gateway — Nginx (:80 → /api/medical|code|ops/, /api/health)
+  # 10a. Prometheus (Phase 2 M3 Step 5 — chunking_* SLO 수집)
+  # ============================================================
+  # /metrics/prometheus 가 활성화된 3개 서비스 (medi-iot-api / coops-api /
+  # autonogada-api) 의 chunking_* 메트릭을 scrape. 알람 규칙 (alerts.yml) 은
+  # book §16.10.3 SLO 와 1:1, Prometheus /alerts UI 에서 발화 확인 가능.
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: prometheus-dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability-stack/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability-stack/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'   # 1주 데이터 보존 (SLO 검증용)
+      - '--web.enable-lifecycle'             # /-/reload 핫-리로드 지원
+      - '--web.enable-admin-api'
+    depends_on:
+      - medi-iot-api
+      - coops-api
+      - autonogada-api
+    networks:
+      - mediiot-network
+    restart: unless-stopped
+
+  # ============================================================
+  # 10b. Grafana (Phase 2 M3 Step 5 — chunking 대시보드 자동 프로비저닝)
+  # ============================================================
+  # observability-stack/grafana/provisioning 의 datasource + dashboard 설정이
+  # 컨테이너 기동 시 자동 적용된다 — 별도 UI 설정 불필요.
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: grafana-dev
+    ports:
+      - "3001:3000"   # 3000 은 dashboard-dev 가 점유 — 3001 사용
+    volumes:
+      - ./observability-stack/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability-stack/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"      # dev 편의 — 운영에선 false
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    depends_on:
+      - prometheus
+    networks:
+      - mediiot-network
+    restart: unless-stopped
+
+  # ============================================================
+  # 11. API Gateway — Nginx (:80 → /api/medical|code|ops/, /api/health)
   # ============================================================
   api-gateway:
     build:
@@ -310,6 +387,9 @@ services:
       - medi-iot-api
       - autonogada-api
       - coops-api
+      - dashboard
+    volumes:
+      - ./shared-libraries/reports/harness:/var/www/harness-reports:ro
     networks:
       - mediiot-network
     restart: unless-stopped
@@ -322,6 +402,10 @@ volumes:
     name: mediiot-postgres-data
   redis_data:
     name: mediiot-redis-data
+  prometheus_data:
+    name: mediiot-prometheus-data
+  grafana_data:
+    name: mediiot-grafana-data
 
 # ============================================================
 # Networks

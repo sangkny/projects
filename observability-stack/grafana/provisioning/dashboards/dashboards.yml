@@ -1,0 +1,17 @@
+# Grafana 자동 프로비저닝 — 대시보드 (Step 5).
+#
+# /etc/grafana/provisioning/dashboards/dashboards.yml 이 path 의 JSON 파일들을
+# 자동으로 등록한다.
+
+apiVersion: 1
+
+providers:
+  - name: 'idea-collection'
+    orgId: 1
+    folder: 'idea-collection'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards

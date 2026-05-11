@@ -1,0 +1,130 @@
+# Alertmanager / Prometheus 알람 규칙 — idea-collection 청킹 SLO (Step 5).
+#
+# book §16.10.3 권장 SLO 와 §16.10.5 운영 권고를 알람으로 변환:
+#   - chunking_fits_context=false 비율 < 10% (정상 트래픽)
+#   - chunking_overlap_inflation_ratio ≤ 1.35 (overlap_ratio 0.15 기준)
+#   - chunking_context_overflow_total : 5분간 1건 이상이면 즉시 경고
+#
+# 발화 조건은 flow 라벨로 분리해 서비스별로 독립적인 신호를 만든다.
+# Alertmanager 가 별도 설정되지 않은 환경에서도 Prometheus /alerts UI 와
+# /api/v1/rules 에서 발화 상태를 확인할 수 있어 SLO 검증의 1차 자료로 쓰인다.
+
+groups:
+  - name: chunking_slo
+    interval: 30s
+    rules:
+      # ── 컨텍스트 오버플로우 (가장 critical) ───────────────────────────
+      - alert: ChunkingContextOverflow
+        expr: increase(chunking_context_overflow_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: idea-collection-ops
+          slo: chunking_context_overflow
+        annotations:
+          summary: 'flow={{ $labels.flow }} 에서 컨텍스트 오버플로우 발생'
+          description: |
+            service={{ $labels.service }} flow={{ $labels.flow }} 에서 최근 5분간
+            chunking_context_overflow_total 이 {{ $value | printf "%.0f" }}건 증가했다.
+            §16.10.5 운영 권고에 따라 LM Studio num_ctx 또는 REVIEWER_* 환경변수를
+            점검할 것. (book/part6/ch16-phase2-extensions.md)
+
+      # ── 단일 호출 fits 비율 < 90% (5분 윈도우) ─────────────────────────
+      - alert: ChunkingFitsRateLow
+        expr: |
+          (
+            avg_over_time(chunking_fits_context[5m])
+          ) < 0.9
+        for: 5m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: chunking_fits_rate
+        annotations:
+          summary: 'flow={{ $labels.flow }} 의 fits_context 5분 평균이 90% 미만'
+          description: |
+            service={{ $labels.service }} flow={{ $labels.flow }} 의 chunking_fits_context
+            5분 평균이 {{ $value | printf "%.2f" }} 로 0.9 미만이다. 입력이 모델창에
+            맞지 않아 청크 분할이 자주 일어나고 있다 — 호출자 측 입력 축소 또는
+            상위 모델로 라우팅을 검토할 것.
+
+      # ── overlap 인플레이션 비율 과다 (1.5 초과) ────────────────────────
+      - alert: ChunkingOverlapInflationHigh
+        expr: |
+          avg_over_time(chunking_overlap_inflation_ratio[10m]) > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: chunking_overlap_inflation
+        annotations:
+          summary: 'flow={{ $labels.flow }} 의 overlap 인플레이션 1.5 초과'
+          description: |
+            service={{ $labels.service }} flow={{ $labels.flow }} 의 평균 overlap
+            inflation 이 {{ $value | printf "%.2f" }} 로 §16.10.3 권고 (≤1.35) 를
+            초과했다. CHUNKING_OVERLAP_RATIO 를 0.10 으로 낮추거나 청크 본문 budget
+            을 늘릴 것.
+
+      # ── 청크 실패 비율 (실패 / 시도) 1분 윈도우 ────────────────────────
+      - alert: ChunkingFailureRateHigh
+        expr: |
+          (
+            rate(chunking_chunks_failed_total[5m])
+            /
+            clamp_min(
+              rate(chunking_chunks_success_total[5m])
+              + rate(chunking_chunks_failed_total[5m]),
+              0.001
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: chunking_failure_rate
+        annotations:
+          summary: 'flow={{ $labels.flow }} 의 청크 실패율 5% 초과'
+          description: |
+            service={{ $labels.service }} flow={{ $labels.flow }} 의 청크 실패율이
+            {{ $value | printf "%.1%%" }} 로 5% 임계를 넘었다. 호출자 측 LLM 에러를
+            확인하고, Reviewer/Generator 단계의 입력 가드를 점검할 것.
+
+      # ── total latency p95 30s 초과 (청크 늘면서 응답 지연 증가) ────────
+      - alert: ChunkingTotalLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service, flow) (rate(chunking_total_seconds_bucket[5m]))
+          ) > 30
+        for: 10m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: chunking_latency_p95
+        annotations:
+          summary: 'flow={{ $labels.flow }} p95 latency 30s 초과'
+          description: |
+            service={{ $labels.service }} flow={{ $labels.flow }} 의
+            chunking_total_seconds p95 가 {{ $value | printf "%.1f" }}s 다.
+            §16.10.3 권고 (+30% 미만/청크) 를 검증할 것.
+
+  - name: chunking_meta
+    interval: 60s
+    rules:
+      # ── invocations 가 0 이면 scrape 는 되지만 호출이 한 번도 없는 상태.
+      #    경고는 아니지만 운영 가시성을 위해 별도 그룹으로 분리.
+      - alert: ChunkingNoInvocations
+        expr: |
+          (sum by (service, flow) (chunking_invocations_total)) == 0
+          unless on() vector(0) > 0
+        for: 30m
+        labels:
+          severity: info
+          team: idea-collection-ops
+          slo: chunking_invocations
+        annotations:
+          summary: 'flow={{ $labels.flow }} 30분간 호출 0건'
+          description: |
+            service={{ $labels.service }} flow={{ $labels.flow }} 가 30분 동안
+            한 번도 호출되지 않았다. 통상적인 dev 환경이라면 무시 가능. 운영에서
+            중요 flow 라면 호출 경로 단절을 의심할 것.

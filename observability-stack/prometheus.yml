@@ -1,0 +1,48 @@
+# Prometheus scrape config — idea-collection 청킹 메트릭 (Step 5).
+#
+# Step 4 에서 3개 서비스가 /metrics/prometheus 로 chunking_* 메트릭을 노출하므로,
+# metrics_path 를 /metrics/prometheus 로 지정해서 수집한다. 기존 /metrics (JSON)
+# 은 health-aggregator /aggregate 가 호환을 위해 의존하므로 건드리지 않는다.
+#
+# 라벨:
+#   - job             : 'idea-collection-chunking' (Prometheus 가 자동 부착)
+#   - container_name  : relabel 로 부착 (medi-iot-api / coops-api / autonogada-api)
+#   - service/flow/strategy/domain : 각 서비스가 메트릭에 직접 부착 (Step 4 prom_metrics)
+#
+# 알람 규칙은 rule_files 에서 alerts.yml 을 로드하며, §16.10.3 의 SLO 와 1:1.
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+  external_labels:
+    monitor: idea-collection-dev
+    stack: phase2-month3
+
+# 알람 규칙 (Alertmanager 가 없어도 Prometheus /alerts UI 에서 발화 확인 가능).
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # ── idea-collection 4개 flow (3개 서비스 컨테이너) ────────────────────────
+  - job_name: 'idea-collection-chunking'
+    metrics_path: /metrics/prometheus
+    scheme: http
+    static_configs:
+      - targets:
+          - 'medi-iot-api:8000'
+          - 'coops-api:8000'
+          - 'autonogada-api:8000'
+        labels:
+          observability: chunking
+    relabel_configs:
+      # __address__ → container_name 라벨 (예: 'medi-iot-api:8000' → 'medi-iot-api')
+      - source_labels: [__address__]
+        regex: '([^:]+):\d+'
+        target_label: container_name
+        replacement: '${1}'
+
+  # ── Prometheus 자체 (자기-감시) ────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
