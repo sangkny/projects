@@ -128,3 +128,163 @@ groups:
             service={{ $labels.service }} flow={{ $labels.flow }} 가 30분 동안
             한 번도 호출되지 않았다. 통상적인 dev 환경이라면 무시 가능. 운영에서
             중요 flow 라면 호출 경로 단절을 의심할 것.
+
+  # ──────────────────────────────────────────────────────────────────
+  # SaaS billing SLO (C Week 3 Day 3, 2026-05-12)
+  #
+  # ADK + CoOps 가 ``shared.saas`` 의 record_call / enforce_quota /
+  # switch_subscription / handle_event 를 통해 발행하는 saas_* 메트릭에 대한 알람.
+  # ──────────────────────────────────────────────────────────────────
+  - name: saas_billing
+    interval: 30s
+    rules:
+      # ── 429 차단율 5% 초과 (5분 평균) — 유료 전환 권유 시그널 ────────
+      - alert: SaaSQuotaBlockedRateHigh
+        expr: |
+          (
+            rate(saas_quota_blocked_total[5m])
+            /
+            clamp_min(
+              rate(saas_calls_total[5m])
+              + rate(saas_quota_blocked_total[5m]),
+              0.001
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: saas_quota_block_rate
+        annotations:
+          summary: 'service={{ $labels.service }} plan={{ $labels.plan_code }} 429 비율 5% 초과'
+          description: |
+            saas_quota_blocked_total / (saas_calls_total + saas_quota_blocked_total)
+            의 5분 평균이 5% 를 넘었다. 무료 플랜 사용자가 업그레이드 시점에
+            도달했을 가능성. /admin/stats 에서 plan_distribution 을 점검하고
+            업그레이드 안내 이메일/Slack 알림을 자동화 검토 (B-7 백로그
+            Customer Portal 과 연계).
+
+      # ── 호출 실패율 (status=failed / status=allowed) 3% 초과 ─────────
+      - alert: SaaSCallFailureRateHigh
+        expr: |
+          (
+            sum by (service) (rate(saas_calls_total{status="failed"}[5m]))
+            /
+            clamp_min(
+              sum by (service) (rate(saas_calls_total[5m])),
+              0.001
+            )
+          ) > 0.03
+        for: 5m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: saas_call_failure_rate
+        annotations:
+          summary: 'service={{ $labels.service }} 호출 실패율 3% 초과'
+          description: |
+            ``record_call(success=False)`` 호출 비율이 5분 평균 3% 를 넘었다.
+            대개 LM Studio 다운 또는 Orchestrator 응답 파싱 실패. ADK/CoOps
+            컨테이너 로그와 LM Studio /v1/models 응답을 점검할 것.
+
+      # ── Stripe webhook ignored action 비율 — 미지원 이벤트 누락 시그널 ──
+      - alert: SaaSStripeIgnoredEventsHigh
+        expr: |
+          rate(saas_stripe_webhook_events_total{action="ignored"}[10m]) > 0.5
+        for: 10m
+        labels:
+          severity: info
+          team: idea-collection-ops
+          slo: saas_stripe_unsupported
+        annotations:
+          summary: 'service={{ $labels.service }} 미지원 Stripe 이벤트 빈도 ↑'
+          description: |
+            event_type={{ $labels.event_type }} 가 ignored 처리되고 있다. B-7
+            2 라운드 백로그 (invoice.* / customer.* / refund.*) 의 우선 순위를
+            재검토할 시점.
+
+      # ── plan 전환 0건 (운영 점검용 info) ───────────────────────────
+      - alert: SaaSNoPlanTransitions24h
+        expr: |
+          (
+            sum by (service) (increase(saas_plan_transitions_total[24h]))
+          ) == 0
+          unless on() vector(0) > 0
+        for: 1h
+        labels:
+          severity: info
+          team: idea-collection-ops
+          slo: saas_plan_transitions
+        annotations:
+          summary: 'service={{ $labels.service }} 24시간 plan 전환 0건'
+          description: |
+            24시간 동안 admin /subscribe 또는 Stripe webhook 으로 plan 전환이
+            한 건도 발생하지 않았다. 가입 깔때기가 정체 중일 수 있다 — 베타
+            온보딩 캠페인 또는 가격 페이지 트래픽 점검.
+
+  # ──────────────────────────────────────────────────────────────────
+  # MEDI clinical SLO (D R2 Day 4, 2026-05-13)
+  #
+  # VISION 자동 승격 (auto_promote) 메트릭과 임상 검토 큐 (DiagnosisReview)
+  # 의 운영 신호. 한장요약 §의료 안전 — 자동 승격은 보조이며 의사 검토는
+  # 필수, 따라서 알람도 안전판 위주.
+  # ──────────────────────────────────────────────────────────────────
+  - name: medi_clinical
+    interval: 60s
+    rules:
+      # ── 자동 승격이 1시간 0건이면 워크플로 단절 의심 (info) ────────
+      - alert: MEDIAutoPromoteSilent1h
+        expr: |
+          sum(increase(medi_auto_promote_total{outcome="promoted"}[1h])) == 0
+          unless on() vector(0) > 0
+        for: 30m
+        labels:
+          severity: info
+          team: idea-collection-ops
+          slo: medi_auto_promote
+        annotations:
+          summary: 'MEDI 자동 승격 1시간 0건 (VISION→DiagnosisReview)'
+          description: |
+            ``medi_auto_promote_total{outcome="promoted"}`` 가 1시간 동안 0건이다.
+            CONSENSUS 라우팅 또는 confidence 임계값이 너무 높을 수 있다.
+            ``MEDI_AUTO_PROMOTE_MIN_CONFIDENCE`` / ``MEDI_AUTO_PROMOTE_CONSENSUS_ONLY``
+            환경변수를 점검하라.
+
+      # ── skipped_low_confidence 비율 80% 초과 — VISION 품질 저하 신호 ─
+      - alert: MEDIAutoPromoteLowConfidenceRateHigh
+        expr: |
+          (
+            sum(rate(medi_auto_promote_total{outcome="skipped_low_confidence"}[15m]))
+            /
+            clamp_min(
+              sum(rate(medi_auto_promote_total[15m])),
+              0.001
+            )
+          ) > 0.8
+        for: 15m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: medi_auto_promote_quality
+        annotations:
+          summary: 'MEDI VISION confidence 저하 — skipped 비율 80% 초과'
+          description: |
+            ``medi_auto_promote_total{outcome="skipped_low_confidence"}`` 가 전체의
+            80% 를 넘었다. CONSENSUS 모델 중 하나가 응답 품질이 떨어졌거나
+            LM Studio 가 다운됐을 가능성. /metrics 에 라벨링된 outcome 분포와
+            ``medi-iot-api`` 로그를 함께 점검할 것.
+
+      # ── 검토 대기 큐 100건 초과 (별도 collector 필요 — medi_review_pending) ─
+      - alert: MEDIReviewQueueBacklog
+        expr: medi_review_pending > 100
+        for: 30m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: medi_review_queue
+        annotations:
+          summary: 'MEDI 의사 검토 큐 100건 초과 (의사 처리 지연)'
+          description: |
+            ``DiagnosisReview status='pending_review'`` 가 100건을 넘어섰다.
+            의사 인력 추가 또는 검토 우선순위 (severity=critical 부터) 재정렬을
+            검토할 것.

@@ -1,0 +1,223 @@
+{
+  "annotations": { "list": [] },
+  "description": "MEDI clinical SaaS 대시보드 — D R2 Day 4 (2026-05-13). 자동 승격(medi_auto_promote_total) / 임상 SaaS billing(saas_*{service=\"medi\"}) / 의사 검토 큐 상태를 한눈에. alerts.yml saas_billing 그룹 + 신규 medi_clinical 그룹과 정합.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "자동 승격 (VISION → DiagnosisReview)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "1시간 자동 승격 결과 분포",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(medi_auto_promote_total[1h]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "promoted" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": "skipped.*" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "failed" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 1 }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "자동 승격 시계열 (outcome 별)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(medi_auto_promote_total[5m]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops" }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "table" } },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 1 }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "MEDI Billing (saas_*{service=\"medi\"})",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "MEDI 5분 호출 수 (plan 별)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (plan_code) (increase(saas_calls_total{service=\"medi\"}[5m]))",
+          "legendFormat": "{{plan_code}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal"
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "MEDI quota 차단 (plan 별)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (plan_code) (rate(saas_quota_blocked_total{service=\"medi\"}[5m]))",
+          "legendFormat": "{{plan_code}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "table" } },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "MEDI 누적 매출 (paid - refunded)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(saas_stripe_revenue_usd_total{service=\"medi\",direction=\"paid\"}) - sum(saas_stripe_revenue_usd_total{service=\"medi\",direction=\"refunded\"})",
+          "legendFormat": "USD",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "yellow", "value": null },
+              { "color": "green", "value": 1000 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 14 }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "MEDI Plan 전환 (1d)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (from_plan,to_plan) (increase(saas_plan_transitions_total{service=\"medi\"}[1d]))",
+          "legendFormat": "{{from_plan}}→{{to_plan}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal"
+      },
+      "gridPos": { "h": 6, "w": 16, "x": 8, "y": 14 }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "임상 검토 큐 (DiagnosisReview)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "검토 대기 (pending_review) — 별도 수집기 (예: pg_exporter ‘medi_review_pending’)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "medi_review_pending",
+          "legendFormat": "pending",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 21 }
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["medi", "phase2", "d-track", "clinical"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MEDI Clinical Overview (D R2)",
+  "uid": "medi-overview-d-r2",
+  "version": 1,
+  "weekStart": ""
+}
