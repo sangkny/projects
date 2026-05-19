@@ -107,6 +107,8 @@ services:
       context: ./MEDI-IOT-EyeCare
       dockerfile: Dockerfile
     container_name: medi-iot-api-dev
+    env_file:
+      - .env.local
     ports:
       - "8001:8000"
     volumes:
@@ -118,12 +120,29 @@ services:
       LLM_DEFAULT_ROLE: vision
       # shared-libraries 절대 import 가능하도록 PYTHONPATH 설정
       PYTHONPATH: /app/shared-libraries:/app
+      # D R3 D1 — MEDI Stripe (Price ID·whsec 는 projects/.env.local — env_file)
+      MEDI_STRIPE_ENABLED: "1"
+      MEDI_STRIPE_SECRET_KEY: "sk_test_51TYIsd2d53clZrxN0mdQwjZQTSIgDPAqVwFzIuE396gYDtQ9EbznU2MKH37AmWhWHdhbEWqQDYOVBcCGXmVGBriY007ziokopV"
+      MEDI_STRIPE_SKIP_SIG_VERIFY: "1"
+      # D R3 D3 — VISION multi-modal (2+ 모델 시 consensus 자동)
+      MEDI_VISION_MODE: ${MEDI_VISION_MODE:-consensus}
+      MEDI_VISION_MODELS: ${MEDI_VISION_MODELS:-google/gemma-4-26b-a4b,mistralai/mistral-7b-instruct-v0.3}
+      MEDI_VISION_CONSENSUS_MIN_AGREE: ${MEDI_VISION_CONSENSUS_MIN_AGREE:-2}
+      # D R3 D2 — S3/MinIO (기본 local; 스모크 시 STORAGE_BACKEND=s3)
+      STORAGE_BACKEND: ${MEDI_STORAGE_BACKEND:-local}
+      S3_BUCKET: ${MEDI_S3_BUCKET:-medi-dev}
+      S3_REGION: ${MEDI_S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${MEDI_AWS_ACCESS_KEY_ID:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MEDI_AWS_SECRET_ACCESS_KEY:-minioadmin}
+      AWS_ENDPOINT_URL: ${MEDI_AWS_ENDPOINT_URL:-http://minio:9000}
     depends_on:
       <<: *depends-infra
     <<: *extra-hosts
     networks:
       - mediiot-network
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     restart: unless-stopped
 
   # ============================================================
@@ -225,6 +244,46 @@ services:
     restart: unless-stopped
 
   # ============================================================
+  # 6a. MinIO (D R3 D2 — S3 호환 로컬 스토리지)
+  # ============================================================
+  minio:
+    image: minio/minio:latest
+    container_name: minio-dev
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - mediiot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init-dev
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - mediiot-network
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb -p local/medi-dev 2>/dev/null || true &&
+      echo 'minio bucket medi-dev ready'
+      "
+    restart: "no"
+
+  # ============================================================
   # 6b. 코드 샌드박스 — TypeScript tsc / rustc (Phase 2 W4)
   # ============================================================
   # ============================================================
@@ -299,6 +358,9 @@ services:
       <<: [*llm-env, *db-env]
       SERVICE_NAME: coops
       PYTHONPATH: /app/shared-libraries:/app
+      COOPS_STRIPE_ENABLED: '${COOPS_STRIPE_ENABLED:-0}'
+      COOPS_STRIPE_SECRET_KEY: '${COOPS_STRIPE_SECRET_KEY:-}'
+      COOPS_STRIPE_PRICE_ID_ENT: '${COOPS_STRIPE_PRICE_ID_ENT:-}'
     depends_on:
       <<: *depends-infra
     <<: *extra-hosts
@@ -414,6 +476,8 @@ volumes:
     name: mediiot-postgres-data
   redis_data:
     name: mediiot-redis-data
+  minio_data:
+    name: mediiot-minio-data
   prometheus_data:
     name: mediiot-prometheus-data
   grafana_data:

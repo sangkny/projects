@@ -1,0 +1,16 @@
+:root {
+  color-scheme: dark;
+}
+
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-height: 100vh;
+  text-align: left;
+}
+
+body {
+  margin: 0;
+}

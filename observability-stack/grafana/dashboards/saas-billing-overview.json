@@ -1,6 +1,6 @@
 {
   "annotations": { "list": [] },
-  "description": "CoOps SaaS billing/quota 대시보드 — C Week 3 Day 3 (2026-05-12). saas_calls_total + saas_quota_blocked_total + saas_plan_transitions_total + saas_stripe_webhook_events_total 메트릭을 service/plan_code/action 라벨로 분리해 시각화. alerts.yml 의 saas_billing 그룹과 1:1 매핑.",
+  "description": "CoOps SaaS billing/quota 대시보드 — C Week 3 + B-7 Stripe R3 (2026-05-14). saas_calls_total … saas_stripe_webhook_events_total + R3: saas_stripe_revenue_minor_total, saas_stripe_disputes_total, saas_stripe_revenue_usd_total rate.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -264,12 +264,83 @@
       },
       "options": { "orientation": "auto", "colorMode": "value", "textMode": "value_and_name" },
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 27 }
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "Stripe R3 — 멀티 통화 minor · 분쟁 (B-7, 2026-05-14)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Stripe minor 단위 매출 증가율 (service / currency / direction)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (service, currency, direction) (rate(saas_stripe_revenue_minor_total[5m]))",
+          "legendFormat": "{{service}} {{currency}} {{direction}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 36 }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Stripe dispute 이벤트 (service / event_type / status)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (service, event_type, status) (rate(saas_stripe_disputes_total[5m]))",
+          "legendFormat": "{{service}} {{event_type}} {{status}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "bars", "stacking": { "mode": "normal", "group": "A" }, "fillOpacity": 50 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 36 }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Stripe USD 근사 매출 (paid / refunded, rate)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (service, direction) (rate(saas_stripe_revenue_usd_total[5m]))",
+          "legendFormat": "{{service}} {{direction}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20 },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 43 }
     }
   ],
   "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["saas", "billing", "coops", "adk", "c-week3"],
+  "tags": ["saas", "billing", "coops", "adk", "c-week3", "stripe-r3"],
   "templating": {
     "list": [
       {

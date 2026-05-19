@@ -1,0 +1,59 @@
+{
+  "name": "autonogada-vscode",
+  "displayName": "AutoNoGaDa 도우미",
+  "description": "AutoNoGaDa 파이프라인 연동 · 주석 기반 코드 생성 · 리뷰 · SVG · Ontology(polyglot)",
+  "version": "0.2.0",
+  "publisher": "sangkny",
+  "license": "MIT",
+  "repository": {"type": "git", "url": "https://github.com/sangkny/projects"},
+  "engines": {"vscode": "^1.85.0"},
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "AutoNoGaDa",
+      "properties": {
+        "autonogada.baseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8002",
+          "description": "AutoNoGaDa ADK 베이스 URL (예: 게이트웨이 시 http://127.0.0.1/api/code)"
+        },
+        "autonogada.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "JWT Bearer 토큰 (generate/review 필요 시 설정)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "autonogada.generate",
+        "title": "AutoNoGaDa: 주석 선택 → 코드 생성"
+      },
+      {
+        "command": "autonogada.review",
+        "title": "AutoNoGaDa: 현재 파일 코드 리뷰"
+      },
+      {
+        "command": "autonogada.svg",
+        "title": "AutoNoGaDa: 다이어그램(SVG) 생성"
+      },
+      {
+        "command": "autonogada.ontology",
+        "title": "AutoNoGaDa: Ontology(polyglot) 검증"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "npm run compile -- --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.25.10",
+    "typescript": "~5.4.5"
+  }
+}

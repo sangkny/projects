@@ -1,0 +1,272 @@
+:root {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.45;
+  color: #0f172a;
+  background-color: #0b1224;
+}
+
+body {
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.code-block {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.75rem;
+  overflow: auto;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  max-height: 200px;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, #1f3b8f40, transparent 42%),
+    radial-gradient(circle at 80% 0%, #0891b240, transparent 42%), #070b17;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topnav {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  background: #0f172aec;
+  border-bottom: 1px solid #1f2a41;
+}
+
+.brand {
+  font-weight: 700;
+  color: #c7dcff;
+  margin-right: 1rem;
+}
+
+.navlink {
+  color: #9cb4e4;
+  text-decoration: none;
+  padding: 0.3rem 0.55rem;
+  border-radius: 4px;
+}
+
+.navlink:hover {
+  background: #1f2a4180;
+  color: #e6edff;
+}
+
+.navlink.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.app-main {
+  padding: 1.35rem clamp(14px, 3vw, 36px);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.page h1 {
+  margin: 0 0 0.45rem;
+  color: #e8eefc;
+  font-weight: 700;
+}
+
+.page h2 {
+  color: #bed2ff;
+  margin-top: 1.75rem;
+}
+
+.muted {
+  color: #8aa7d9;
+}
+
+.section-title {
+  color: #c7dcff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.stripe-ops {
+  background: #111836cc;
+  border: 1px solid #2a3f6a;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+.stripe-ops .muted {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.stripe-ops code {
+  font-size: 0.78em;
+  background: #0f162f;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  color: #dbe8ff;
+}
+
+.inline-link {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.inline-link:hover {
+  color: #bae6fd;
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.95rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0.95rem;
+}
+
+.mt {
+  margin-top: 1.35rem;
+}
+
+.card {
+  background: #111836f2;
+  border: 1px solid #273456;
+  border-radius: 10px;
+  padding: 1rem 1rem 0.9rem;
+}
+
+.card-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7d9fe3;
+}
+
+.card-value {
+  font-size: 1.95rem;
+  font-weight: 700;
+  color: #eaf1ff;
+  margin: 0.25rem 0;
+}
+
+.card-sub {
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.panel {
+  background: #131c3df2;
+  border: 1px solid #2a3962;
+  border-radius: 10px;
+  padding: 1rem;
+  color: #d7e7ff;
+}
+
+.panel h3 {
+  margin-top: 0;
+  color: #b8cffa;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.table.compact th,
+.table.compact td {
+  border-bottom: 1px solid #2a3962;
+  padding: 0.4rem;
+  text-align: left;
+}
+
+.dom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.dom-cell {
+  background: #0f162f;
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+}
+
+.dom-name {
+  font-weight: 600;
+  color: #8db4ff;
+  text-transform: capitalize;
+}
+
+.dom-rate {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.harness-results {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.harness-card {
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #2a3962;
+  background: #0f1733;
+}
+
+.harness-card.pass {
+  border-left: 3px solid #22c55e;
+}
+
+.harness-card.fail {
+  border-left: 3px solid #fb7185;
+}
+
+.h-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #e6edff;
+}
+
+.h-meta {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.svg-box {
+  border: 1px dashed #2a4575;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #0f1733;
+  color: #9bb6e6;
+}
+
+.svg-inner svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.summary-line {
+  color: #cce0ff;
+  font-size: 1rem;
+}

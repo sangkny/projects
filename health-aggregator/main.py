@@ -1,5 +1,11 @@
+# pyright: reportMissingImports=false
+# basedpyright: reportMissingImports=false
 """
 3개 백엔드 /health 를 병렬 조회해 JSON으로 집계 (Nginx /api/health).
+
+Docker-only 마이크로서비스 — 런타임 의존성(`fastapi`, `httpx`)은 ``Dockerfile`` 의
+``requirements.txt`` 에서만 설치된다. 호스트 IDE 분석기(basedpyright)는 venv 가 없어
+``reportMissingImports`` 를 발생시키므로 파일 상단 디렉티브로 이 파일에 한해 끈다.
 """
 from __future__ import annotations
 

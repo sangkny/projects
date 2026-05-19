@@ -288,3 +288,23 @@ groups:
             ``DiagnosisReview status='pending_review'`` 가 100건을 넘어섰다.
             의사 인력 추가 또는 검토 우선순위 (severity=critical 부터) 재정렬을
             검토할 것.
+
+  # ──────────────────────────────────────────────────────────────────
+  # MEDI R3 — Stripe 실연동 (D1, 2026-05-18)
+  # ──────────────────────────────────────────────────────────────────
+  - name: medi_r3_stripe
+    interval: 60s
+    rules:
+      - alert: MEDIStripeWebhookErrorsHigh
+        expr: |
+          sum(rate(saas_stripe_webhook_events_total{service="medi",action=~"error|failed"}[15m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: idea-collection-ops
+          slo: medi_stripe_webhook
+        annotations:
+          summary: 'MEDI Stripe webhook 오류율 상승'
+          description: |
+            ``MEDI_STRIPE_WEBHOOK_SECRET`` · ``stripe listen`` 포트 8001 정합,
+            ``scripts/stripe-webhook-docker-smoke.sh medi-iot-api`` 로 재검증.

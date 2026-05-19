@@ -1,6 +1,6 @@
 {
   "annotations": { "list": [] },
-  "description": "MEDI clinical SaaS 대시보드 — D R2 Day 4 (2026-05-13). 자동 승격(medi_auto_promote_total) / 임상 SaaS billing(saas_*{service=\"medi\"}) / 의사 검토 큐 상태를 한눈에. alerts.yml saas_billing 그룹 + 신규 medi_clinical 그룹과 정합.",
+  "description": "MEDI clinical SaaS 대시보드 — D R3 (2026-05-18). 자동 승격 / billing / Stripe 웹훅 / storage / FHIR·VISION R3. alerts.yml medi_clinical + saas_billing 정합.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -206,6 +206,73 @@
         }
       },
       "gridPos": { "h": 6, "w": 8, "x": 0, "y": 21 }
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "D R3 — Stripe 웹훅 & Storage (2026-05-18)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "MEDI Stripe webhook (action 별)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (event_type, action) (rate(saas_stripe_webhook_events_total{service=\"medi\"}[5m]))",
+          "legendFormat": "{{event_type}}/{{action}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "table" } },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 28 }
+    },
+    {
+      "id": 32,
+      "type": "stat",
+      "title": "MEDI Stripe 분쟁 (1h)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(saas_stripe_disputes_total{service=\"medi\"}[1h]))",
+          "legendFormat": "disputes",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 28 }
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "MEDI Storage ops (backend 별 save)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (backend) (rate(medi_storage_operations_total{operation=\"save\"}[5m]))",
+          "legendFormat": "{{backend}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list" } },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 28 }
     }
   ],
   "preload": false,
@@ -216,8 +283,8 @@
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "MEDI Clinical Overview (D R2)",
+  "title": "MEDI Clinical Overview (D R3)",
   "uid": "medi-overview-d-r2",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
