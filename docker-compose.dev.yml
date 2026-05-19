@@ -108,7 +108,8 @@ services:
       dockerfile: Dockerfile
     container_name: medi-iot-api-dev
     env_file:
-      - .env.local
+      - path: .env.local
+        required: false
     ports:
       - "8001:8000"
     volumes:
@@ -128,6 +129,12 @@ services:
       MEDI_VISION_MODE: ${MEDI_VISION_MODE:-consensus}
       MEDI_VISION_MODELS: ${MEDI_VISION_MODELS:-google/gemma-4-26b-a4b,mistralai/mistral-7b-instruct-v0.3}
       MEDI_VISION_CONSENSUS_MIN_AGREE: ${MEDI_VISION_CONSENSUS_MIN_AGREE:-2}
+      # D R4-ML D3 — Retinal CNN inference (기본 llm; 스모크 시 cnn|ensemble)
+      MEDI_INFERENCE_BACKEND: ${MEDI_INFERENCE_BACKEND:-llm}
+      MEDI_CNN_MODEL_PATH: ${MEDI_CNN_MODEL_PATH:-models/retinal_v1.onnx}
+      MEDI_CNN_ARCH: ${MEDI_CNN_ARCH:-efficientnet_b4}
+      MEDI_CNN_CONFIDENCE_MIN: ${MEDI_CNN_CONFIDENCE_MIN:-0.70}
+      MEDI_AUTO_PROMOTE_ALLOW_CNN: ${MEDI_AUTO_PROMOTE_ALLOW_CNN:-1}
       # D R3 D2 — S3/MinIO (기본 local; 스모크 시 STORAGE_BACKEND=s3)
       STORAGE_BACKEND: ${MEDI_STORAGE_BACKEND:-local}
       S3_BUCKET: ${MEDI_S3_BUCKET:-medi-dev}
