@@ -122,7 +122,7 @@ services:
       PYTHONPATH: /app/shared-libraries:/app
       # D R3 D1 — MEDI Stripe (Price ID·whsec 는 projects/.env.local — env_file)
       MEDI_STRIPE_ENABLED: "1"
-      MEDI_STRIPE_SECRET_KEY: "sk_test_51TYIsd2d53clZrxN0mdQwjZQTSIgDPAqVwFzIuE396gYDtQ9EbznU2MKH37AmWhWHdhbEWqQDYOVBcCGXmVGBriY007ziokopV"
+      MEDI_STRIPE_SECRET_KEY: "${MEDI_STRIPE_SECRET_KEY:-}"
       MEDI_STRIPE_SKIP_SIG_VERIFY: "1"
       # D R3 D3 — VISION multi-modal (2+ 모델 시 consensus 자동)
       MEDI_VISION_MODE: ${MEDI_VISION_MODE:-consensus}
