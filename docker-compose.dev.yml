@@ -129,9 +129,12 @@ services:
       MEDI_VISION_MODE: ${MEDI_VISION_MODE:-consensus}
       MEDI_VISION_MODELS: ${MEDI_VISION_MODELS:-google/gemma-4-26b-a4b,mistralai/mistral-7b-instruct-v0.3}
       MEDI_VISION_CONSENSUS_MIN_AGREE: ${MEDI_VISION_CONSENSUS_MIN_AGREE:-2}
-      # D R4-ML D3 — Retinal CNN inference (기본 llm; 스모크 시 cnn|ensemble)
+      # D R4-ML D3 — Retinal CNN (VERSION=auto → v3→v2→v1 로컬, AUTO_PULL → MinIO)
       MEDI_INFERENCE_BACKEND: ${MEDI_INFERENCE_BACKEND:-cnn}
-      MEDI_CNN_MODEL_PATH: ${MEDI_CNN_MODEL_PATH:-models/retinal_v2.onnx}
+      MEDI_CNN_MODEL_PATH: ${MEDI_CNN_MODEL_PATH:-}
+      MEDI_CNN_MODEL_VERSION: ${MEDI_CNN_MODEL_VERSION:-auto}
+      MEDI_CNN_AUTO_PULL: ${MEDI_CNN_AUTO_PULL:-1}
+      MEDI_CNN_MINIO_SOURCE: ${MEDI_CNN_MINIO_SOURCE:-minio://medi-dev/models/}
       MEDI_CNN_ARCH: ${MEDI_CNN_ARCH:-efficientnet_b4}
       MEDI_CNN_CONFIDENCE_MIN: ${MEDI_CNN_CONFIDENCE_MIN:-0.70}
       MEDI_AUTO_PROMOTE_ALLOW_CNN: ${MEDI_AUTO_PROMOTE_ALLOW_CNN:-1}
@@ -146,11 +149,14 @@ services:
       AWS_ENDPOINT_URL: ${MEDI_AWS_ENDPOINT_URL:-http://minio:9000}
     depends_on:
       <<: *depends-infra
+      minio:
+        condition: service_healthy
     <<: *extra-hosts
     networks:
       - mediiot-network
     command: >
       sh -c "python -m alembic upgrade head &&
+             python scripts/sync_cnn_model.py --quiet &&
              python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     restart: unless-stopped
 
