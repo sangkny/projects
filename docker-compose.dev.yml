@@ -1,7 +1,15 @@
 # ============================================================
 # docker-compose.dev.yml
-# WSL2 + Docker 개발 환경
-# LM Studio (Windows, 포트 8000) 연결 — Ollama 컨테이너 불필요
+# WSL2 + Docker 개발 환경 (개발 PC 192.168.0.12)
+#
+# GPU 역할 (2026-05-24 확정):
+#   - 이 파일의 GPU = LM Studio LLM 전용 (호스트 TITAN RTX 24GB)
+#   - LOCAL_* → host.docker.internal:8000 → Windows LM Studio
+#   - CNN 훈련은 여기서 하지 않음 (medi-iot-api OOM). 훈련은 원격 GPU만:
+#       192.168.0.23 (TITAN X 12GB) + training/docker-compose.train.yml
+#   - CNN 추론 = medi-iot-api 컨테이너 내 ONNX Runtime (CPU, gpus: 미사용)
+#
+# LM Studio (Windows, 포트 8000) — Ollama 컨테이너 불필요
 # OpenClaw + Paperclip + PostgreSQL + Redis
 # MEDI-IOT + AutoNoGaDa + CoOps
 # ============================================================
@@ -20,7 +28,7 @@ x-llm-env: &llm-env
   LLM_EMBED_PROVIDER: ${LLM_EMBED_PROVIDER:-local}
   LLM_FALLBACK_ENABLED: "true"
 
-  # ── Local Provider — LM Studio (Windows 포트 8000) ──
+  # ── Local Provider — LM Studio on dev PC (TITAN RTX 24GB, :8000) ──
   LOCAL_BASE_URL: http://host.docker.internal:8000/v1
   LOCAL_API_KEY: lm-studio
   LOCAL_FAST_MODEL: google/gemma-4-e4b
@@ -55,6 +63,8 @@ x-llm-env: &llm-env
   GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
   AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
   AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+
+# 4-에이전트: projects/.env.local (env_file) — environment에 ${} 넣지 않음 (env_file 덮어쓰기 방지)
 
 # 공통 DB/Redis 환경변수
 x-db-env: &db-env
@@ -96,11 +106,16 @@ services:
     <<: *extra-hosts
     networks:
       - mediiot-network
+    env_file:
+      - path: .env.local
+        required: false
     command: sleep infinity   # 컨테이너 유지 — exec으로 직접 명령 실행
     restart: "no"
 
   # ============================================================
   # 2. MEDI-IOT EyeCare API (Phase 1 메인)
+  # CNN 추론 = ONNX Runtime (CPU). LLM = host LM Studio (TITAN RTX @ 192.168.0.12).
+  # CNN 훈련은 원격 192.168.0.23 (training/) — 이 서비스에서 학습하지 않음.
   # ============================================================
   medi-iot-api:
     build:
@@ -129,14 +144,8 @@ services:
       MEDI_VISION_MODE: ${MEDI_VISION_MODE:-consensus}
       MEDI_VISION_MODELS: ${MEDI_VISION_MODELS:-google/gemma-4-26b-a4b,mistralai/mistral-7b-instruct-v0.3}
       MEDI_VISION_CONSENSUS_MIN_AGREE: ${MEDI_VISION_CONSENSUS_MIN_AGREE:-2}
-      # D R4-ML D3 — Retinal CNN (VERSION=auto → v3→v2→v1 로컬, AUTO_PULL → MinIO)
-      MEDI_INFERENCE_BACKEND: ${MEDI_INFERENCE_BACKEND:-cnn}
-      MEDI_CNN_MODEL_PATH: ${MEDI_CNN_MODEL_PATH:-}
-      MEDI_CNN_MODEL_VERSION: ${MEDI_CNN_MODEL_VERSION:-auto}
-      MEDI_CNN_AUTO_PULL: ${MEDI_CNN_AUTO_PULL:-1}
-      MEDI_CNN_MINIO_SOURCE: ${MEDI_CNN_MINIO_SOURCE:-minio://medi-dev/models/}
-      MEDI_CNN_ARCH: ${MEDI_CNN_ARCH:-efficientnet_b4}
-      MEDI_CNN_CONFIDENCE_MIN: ${MEDI_CNN_CONFIDENCE_MIN:-0.70}
+      # D R4-ML D3 — Retinal CNN: projects/.env.local (env_file) 만 사용.
+      # environment 에 ${MEDI_CNN_*} 넣지 않음 — 호스트 빈값이 env_file 을 덮어씀.
       MEDI_AUTO_PROMOTE_ALLOW_CNN: ${MEDI_AUTO_PROMOTE_ALLOW_CNN:-1}
       MEDI_FUNDUS_LAB_OPEN: ${MEDI_FUNDUS_LAB_OPEN:-1}
       MQTT_BROKER_URL: ${MQTT_BROKER_URL:-mqtt://mosquitto:1883}
@@ -351,6 +360,9 @@ services:
       context: ./AutoNoGaDa-ADK
       dockerfile: Dockerfile
     container_name: autonogada-api-dev
+    env_file:
+      - path: .env.local
+        required: false
     ports:
       - "8002:8000"
     volumes:
@@ -379,6 +391,9 @@ services:
       context: ./CoOps-Platform
       dockerfile: Dockerfile
     container_name: coops-api-dev
+    env_file:
+      - path: .env.local
+        required: false
     ports:
       - "8003:8000"
     volumes:
