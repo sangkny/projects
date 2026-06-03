@@ -246,7 +246,7 @@ services:
     image: pgvector/pgvector:pg15   # pgvector 확장 포함 (Week 3 업그레이드)
     container_name: postgres-dev
     ports:
-      - "5432:5432"
+      - "5452:5432"
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
@@ -269,8 +269,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis-dev
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -290,8 +288,8 @@ services:
     container_name: minio-dev
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9010:9000"
+      - "9011:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -300,10 +298,12 @@ services:
     networks:
       - mediiot-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      # minio/minio 이미지에 curl 없음 — TCP 포트 확인
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   minio-init:
@@ -446,7 +446,7 @@ services:
     image: prom/prometheus:v2.55.0
     container_name: prometheus-dev
     ports:
-      - "9090:9090"
+      - "9091:9090"
     volumes:
       - ./observability-stack/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./observability-stack/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -500,7 +500,7 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway-dev
     ports:
-      - "80:80"
+      - "8090:80"
     depends_on:
       - health-aggregator
       - medi-iot-api
