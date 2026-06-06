@@ -1,5 +1,10 @@
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 
+import AdminLayout from './app/admin/layout'
+import AdminModelsPage from './app/admin/models/page'
+import PortalLayout from './app/portal/layout'
+import FundusResultsPage from './app/portal/fundus/results/page'
+import FundusUploadPage from './app/portal/fundus/upload/page'
 import './App.css'
 import AutoNoGaDa from './pages/AutoNoGaDa'
 import CoOps from './pages/CoOps'
@@ -33,6 +38,12 @@ function NavBar() {
       <NavLink to="/coops" className={linkCls}>
         CoOps
       </NavLink>
+      <NavLink to="/portal/fundus/upload" className={linkCls}>
+        Portal
+      </NavLink>
+      <NavLink to="/admin/models" className={linkCls}>
+        Admin
+      </NavLink>
     </nav>
   )
 }
@@ -52,6 +63,13 @@ export default function App() {
             <Route path="/medi" element={<MediIOT />} />
             <Route path="/autonogada" element={<AutoNoGaDa />} />
             <Route path="/coops" element={<CoOps />} />
+            <Route path="/portal" element={<PortalLayout />}>
+              <Route path="fundus/upload" element={<FundusUploadPage />} />
+              <Route path="fundus/results" element={<FundusResultsPage />} />
+            </Route>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="models" element={<AdminModelsPage />} />
+            </Route>
           </Routes>
         </main>
       </div>
