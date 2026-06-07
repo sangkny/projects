@@ -24,6 +24,9 @@ export class FundusAnalysisError extends Error {
   }
 }
 
+/** CPU comprehensive — dev 측정 35~104s; heatmap 포함 시 더 김 */
+const COMPREHENSIVE_TIMEOUT_MS = 180_000;
+
 async function postComprehensive(
   input: FundusUploadInput,
   onProgress?: (phase: AnalysisPhase) => void,
@@ -34,6 +37,7 @@ async function postComprehensive(
   form.append("file", input.file);
   form.append("include_heatmap", "true");
   form.append("lang", "ko");
+  form.append("tasks", "dr,glaucoma,amd,myopia,screening");
   if (input.patientId) {
     form.append("patient_id", input.patientId);
   }
@@ -41,10 +45,23 @@ async function postComprehensive(
 
   onProgress?.("analyzing");
 
-  const res = await fetch(mediApiPath("/api/v1/lab/fundus/comprehensive"), {
-    method: "POST",
-    body: form,
-  });
+  let res: Response;
+  try {
+    res = await fetch(mediApiPath("/api/v1/lab/fundus/comprehensive"), {
+      method: "POST",
+      body: form,
+      signal: AbortSignal.timeout(COMPREHENSIVE_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new FundusAnalysisError(
+        "분석 시간이 초과되었습니다(3분). API가 다른 요청으로 막혀 있으면 medi-iot-api 재시작 후 다시 시도하세요.",
+        408,
+        "TIMEOUT",
+      );
+    }
+    throw err;
+  }
 
   if (res.status === 503) {
     throw new FundusAnalysisError(

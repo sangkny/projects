@@ -13,16 +13,7 @@ import {
 import { ModelCardGrid } from "../../../components/ModelCard";
 import { PRODUCTION_MODELS } from "../../../types/model";
 
-/** GPU ep15 / target 30 epochs — ch41 training snapshot */
-const MULTIDISEASE_TRAINING_PROGRESS = 50;
-const MULTIDISEASE_LIVE_MAUC = 0.9526;
-
 export default function AdminModelsPage() {
-  const trainingProgress = useMemo(
-    () => ({ multidisease_v1: MULTIDISEASE_TRAINING_PROGRESS }),
-    [],
-  );
-
   const chartData = useMemo(
     () =>
       PRODUCTION_MODELS.filter((m) => m.status === "production").map((m) => ({
@@ -33,40 +24,35 @@ export default function AdminModelsPage() {
     [],
   );
 
+  const multidisease = PRODUCTION_MODELS.find((m) => m.id === "multidisease_v1");
+
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-bold text-white">모델 현황</h1>
         <p className="mt-1 text-sm text-slate-400">
-          ch41 SSOT · 운영 4질환(DR/GL/AMD/MYO) + multidisease_v1 훈련 진행
+          ch41 SSOT · 운영 5질환 (DR / Glaucoma / AMD / Myopia / Multidisease)
         </p>
       </header>
 
-      <section className="rounded-xl border border-blue-900/50 bg-blue-950/30 p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Activity className="size-5 text-blue-400" aria-hidden />
-          <div>
-            <p className="text-sm font-semibold text-blue-200">
-              multidisease_v1 훈련 중 · ep15 mAUC={MULTIDISEASE_LIVE_MAUC}
-            </p>
-            <p className="text-xs text-blue-300/80">
-              목표 mAUC≥0.85 달성 · 배포 전 Admin 검증 필요
-            </p>
-          </div>
-          <div className="ml-auto w-full max-w-xs sm:w-48">
-            <div className="mb-1 flex justify-between text-xs text-blue-300">
-              <span>진행률</span>
-              <span>{MULTIDISEASE_TRAINING_PROGRESS}%</span>
+      {multidisease && (
+        <section className="rounded-xl border border-green-900/50 bg-green-950/30 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Activity className="size-5 text-green-400" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-green-200">
+                multidisease_v1 운영 중 · val mAUC=0.9610 · test=0.8937
+              </p>
+              <p className="text-xs text-green-300/80">
+                28-class · 9,592장 (RFMiD+ODIR) · ONNX 68MB · screening API ✅
+              </p>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-blue-950">
-              <div
-                className="h-full rounded-full bg-blue-500 transition-all"
-                style={{ width: `${MULTIDISEASE_TRAINING_PROGRESS}%` }}
-              />
-            </div>
+            <span className="ml-auto rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
+              운영중
+            </span>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
@@ -92,7 +78,7 @@ export default function AdminModelsPage() {
           </ResponsiveContainer>
         </div>
 
-        <ModelCardGrid models={PRODUCTION_MODELS} trainingProgress={trainingProgress} />
+        <ModelCardGrid models={PRODUCTION_MODELS} />
       </section>
     </div>
   );

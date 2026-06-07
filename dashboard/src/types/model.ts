@@ -60,12 +60,14 @@ export const PRODUCTION_MODELS: ModelRecord[] = [
   },
   {
     id: "multidisease_v1",
-    disease: "Screening",
+    disease: "Multidisease",
     version: "retinal_multidisease_v1",
     metric: "mAUC",
-    metric_value: 0.85,
-    status: "training",
-    notes: "GPU training in progress · target mAUC≥0.85",
+    metric_value: 0.961,
+    status: "production",
+    deployed_at: "2026-06",
+    notes: "28-class · 9,592장 · test mAUC=0.8937",
+    onnx_path: "models/retinal_multidisease_v1.onnx",
   },
 ];
 

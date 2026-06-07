@@ -30,7 +30,16 @@ function buildFhirBundle(
               valueString: result.glaucoma?.grade_label ?? "—",
             },
             { code: { text: "AMD" }, valueString: result.amd?.grade_label ?? "—" },
-            { code: { text: "Myopia" }, valueString: result.myopia?.grade_label ?? "—" },
+            {
+              code: { text: "Myopia" },
+              valueString: result.myopia?.grade_label ?? "—",
+            },
+            {
+              code: { text: "Screening" },
+              valueString: result.screening?.normal
+                ? "normal"
+                : (result.screening?.urgent_diseases ?? []).join(",") || "abnormal",
+            },
           ],
           note: [{ text: result.overall_assessment.recommendation }],
         },
@@ -83,6 +92,7 @@ export default function FundusResultsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">안저 종합 분석 결과</h1>
           <p className="mt-1 text-sm text-slate-400">
+            DR · Glaucoma · AMD · Myopia · 28-class Screening (5질환)
             {patientId ? `환자 ID: ${patientId}` : "환자 ID 미입력"}
             {results.analyzed_at && (
               <span className="ml-2 text-slate-500">

@@ -97,6 +97,27 @@ export interface MyopiaResult {
   audit_trail?: Record<string, unknown>;
 }
 
+export interface ScreeningFinding {
+  disease: string;
+  korean_name?: string;
+  probability: number;
+  risk_level: "low" | "moderate" | "high" | "urgent" | string;
+  icd10?: string;
+}
+
+export interface ScreeningResult {
+  findings: ScreeningFinding[];
+  urgent_diseases: string[];
+  total_diseases_detected?: number;
+  recommendations?: string[];
+  urgent_referral?: boolean;
+  priority_diseases?: string[];
+  referral_urgency: ReferralUrgency;
+  normal: boolean;
+  top_findings: ScreeningFinding[];
+  model_used?: string;
+}
+
 export interface OverallAssessment {
   referral_urgency: ReferralUrgency;
   primary_concern: string;
@@ -117,6 +138,7 @@ export interface ComprehensiveResult {
   glaucoma?: GlaucomaResult | null;
   amd?: AMDResult | null;
   myopia?: MyopiaResult | null;
+  screening?: ScreeningResult | null;
   heatmap?: ComprehensiveHeatmaps | Record<string, HeatmapPayload>;
   overall_assessment: OverallAssessment;
   active_tasks?: string[];

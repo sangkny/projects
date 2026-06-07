@@ -11,6 +11,7 @@ import {
   type MyopiaResult,
   type UrgencyBadge,
 } from "../../types/fundus";
+import { ScreeningCard } from "../ScreeningCard";
 
 export interface ComprehensiveCardProps {
   result: ComprehensiveResult;
@@ -133,7 +134,7 @@ export function ComprehensiveCard({
   const dr = result.dr;
 
   return (
-    <article className={className} style={cardStyle} aria-label="4질환 종합 결과">
+    <article className={className} style={cardStyle} aria-label="5질환 종합 결과">
       <header
         style={{
           display: "flex",
@@ -169,7 +170,26 @@ export function ComprehensiveCard({
         {decisionChip(result.glaucoma?.decision, "Glaucoma")}
         {decisionChip(result.amd?.decision, "AMD")}
         {decisionChip(result.myopia?.decision, "Myopia")}
+        {result.screening && (
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14 }}>
+            <span style={{ color: "#475569" }}>Screening</span>
+            <span
+              style={{
+                fontWeight: 600,
+                color: result.screening.normal ? "#16A34A" : "#DC2626",
+              }}
+            >
+              {result.screening.normal ? "정상" : `${result.screening.total_diseases_detected ?? result.screening.findings.length}건`}
+            </span>
+          </div>
+        )}
       </div>
+
+      {result.screening && (
+        <div style={{ marginBottom: 12 }}>
+          <ScreeningCard screening={result.screening} />
+        </div>
+      )}
 
       <CdrGauge glaucoma={result.glaucoma} />
       <DrusenIcon amd={result.amd} />
