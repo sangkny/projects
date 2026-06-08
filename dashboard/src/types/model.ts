@@ -69,6 +69,17 @@ export const PRODUCTION_MODELS: ModelRecord[] = [
     notes: "28-class · 9,592장 · test mAUC=0.8937",
     onnx_path: "models/retinal_multidisease_v1.onnx",
   },
+  {
+    id: "v10_multitask",
+    disease: "Multitask v10",
+    version: "retinal_v10",
+    metric: "mAUC",
+    metric_value: 0.8818,
+    status: "production",
+    deployed_at: "2026-06",
+    notes: "fast mode · composite=0.8818 · GL AUC=0.804 · v10b 재훈련 예정",
+    onnx_path: "models/retinal_v10.onnx",
+  },
 ];
 
 export const STATUS_LABELS: Record<ModelStatus, string> = {

@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { mediApiPath } from "../config/env";
 import { useFundusStore } from "../stores/fundusStore";
-import type { ComprehensiveResult, EyeSide } from "../types/fundus";
+import type { ComprehensiveResult, EyeSide, InferenceMode } from "../types/fundus";
 
 export type AnalysisPhase = "idle" | "uploading" | "analyzing" | "done" | "error";
 
@@ -29,6 +29,7 @@ const COMPREHENSIVE_TIMEOUT_MS = 180_000;
 
 async function postComprehensive(
   input: FundusUploadInput,
+  mode: InferenceMode,
   onProgress?: (phase: AnalysisPhase) => void,
 ): Promise<ComprehensiveResult> {
   onProgress?.("uploading");
@@ -47,7 +48,9 @@ async function postComprehensive(
 
   let res: Response;
   try {
-    res = await fetch(mediApiPath("/api/v1/lab/fundus/comprehensive"), {
+    res = await fetch(
+      mediApiPath(`/api/v1/lab/fundus/comprehensive?mode=${encodeURIComponent(mode)}`),
+      {
       method: "POST",
       body: form,
       signal: AbortSignal.timeout(COMPREHENSIVE_TIMEOUT_MS),
@@ -96,10 +99,11 @@ export function useFundusAnalysis() {
   const setOriginalImage = useFundusStore((s) => s.setOriginalImage);
   const setEyeResult = useFundusStore((s) => s.setEyeResult);
   const patientId = useFundusStore((s) => s.patientId);
+  const inferenceMode = useFundusStore((s) => s.inferenceMode);
 
   const mutation = useMutation({
     mutationFn: (input: FundusUploadInput) =>
-      postComprehensive(input, setPhase),
+      postComprehensive(input, inferenceMode, setPhase),
     onMutate: () => {
       setError(null);
       setPhase("uploading");

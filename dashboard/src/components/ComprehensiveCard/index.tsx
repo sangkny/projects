@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 
+import { useFundusStore } from "../../stores/fundusStore";
 import {
   DECISION_COLORS,
   URGENCY_COLORS,
@@ -8,6 +9,7 @@ import {
   type AMDResult,
   type ComprehensiveResult,
   type GlaucomaResult,
+  type InferenceMode,
   type MyopiaResult,
   type UrgencyBadge,
 } from "../../types/fundus";
@@ -124,6 +126,47 @@ const cardStyle: CSSProperties = {
   boxShadow: "0 1px 2px rgba(15,23,42,0.06)",
 };
 
+function InferenceModeToggle({
+  mode,
+  onChange,
+  compact = false,
+}: {
+  mode: InferenceMode;
+  onChange: (mode: InferenceMode) => void;
+  compact?: boolean;
+}): ReactNode {
+  const btn = (value: InferenceMode, icon: string, label: string) => (
+    <button
+      type="button"
+      onClick={() => onChange(value)}
+      aria-pressed={mode === value}
+      style={{
+        flex: compact ? undefined : 1,
+        padding: compact ? "4px 10px" : "6px 10px",
+        borderRadius: 8,
+        border: mode === value ? "1px solid #2563EB" : "1px solid #CBD5E1",
+        background: mode === value ? "#EFF6FF" : "#F8FAFC",
+        color: mode === value ? "#1D4ED8" : "#475569",
+        fontSize: compact ? 12 : 13,
+        fontWeight: 600,
+        cursor: "pointer",
+      }}
+    >
+      {icon} {label}
+    </button>
+  );
+  return (
+    <div
+      role="group"
+      aria-label="추론 모드"
+      style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
+    >
+      {btn("fast", "⚡", "Fast")}
+      {btn("precise", "🔍", "Precise")}
+    </div>
+  );
+}
+
 export function ComprehensiveCard({
   result,
   eyeSide,
@@ -132,6 +175,9 @@ export function ComprehensiveCard({
 }: ComprehensiveCardProps): ReactElement {
   const urgency = urgencyFromAssessment(result.overall_assessment);
   const dr = result.dr;
+  const inferenceMode = useFundusStore((s) => s.inferenceMode);
+  const setInferenceMode = useFundusStore((s) => s.setInferenceMode);
+  const oa = result.overall_assessment;
 
   return (
     <article className={className} style={cardStyle} aria-label="5질환 종합 결과">
@@ -149,13 +195,22 @@ export function ComprehensiveCard({
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
             {eyeSide ? `${eyeSide === "OS" ? "좌안" : "우안"} (${eyeSide})` : "안저 종합"}
           </h3>
-          {result.overall_assessment.primary_concern !== "none" && (
+          {oa.primary_concern !== "none" && (
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748B" }}>
-              주요: {result.overall_assessment.primary_concern}
+              주요: {oa.primary_concern}
+            </p>
+          )}
+          {(oa.inference_mode || oa.inference_time_ms != null) && (
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748B" }}>
+              {oa.inference_mode ?? "—"}
+              {oa.inference_time_ms != null ? ` · ${oa.inference_time_ms}ms` : ""}
             </p>
           )}
         </div>
-        {urgencyBadge(urgency)}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          {urgencyBadge(urgency)}
+          <InferenceModeToggle mode={inferenceMode} onChange={setInferenceMode} compact />
+        </div>
       </header>
 
       <div

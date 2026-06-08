@@ -31,9 +31,28 @@ export default function AdminModelsPage() {
       <header>
         <h1 className="text-2xl font-bold text-white">모델 현황</h1>
         <p className="mt-1 text-sm text-slate-400">
-          ch41 SSOT · 운영 5질환 (DR / Glaucoma / AMD / Myopia / Multidisease)
+          ch41 SSOT · 운영 5질환 + v10 fast mode
         </p>
       </header>
+
+      {PRODUCTION_MODELS.find((m) => m.id === "v10_multitask") && (
+        <section className="rounded-xl border border-violet-900/50 bg-violet-950/30 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Activity className="size-5 text-violet-400" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-violet-200">
+                v10 fast mode · composite=0.8818 · 웜 추론 ~340ms
+              </p>
+              <p className="text-xs text-violet-300/80">
+                5-head ONNX · comprehensive ?mode=fast · GL AUC=0.804 → v10b 재훈련
+              </p>
+            </div>
+            <span className="ml-auto rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-white">
+              fast ⚡
+            </span>
+          </div>
+        </section>
+      )}
 
       {multidisease && (
         <section className="rounded-xl border border-green-900/50 bg-green-950/30 p-4">

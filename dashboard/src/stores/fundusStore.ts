@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { BilateralComprehensiveResult, ComprehensiveResult, EyeSide } from "../types/fundus";
+import type { BilateralComprehensiveResult, ComprehensiveResult, EyeSide, InferenceMode } from "../types/fundus";
 
 export interface FundusAnalysisState {
   patientId: string;
@@ -8,10 +8,12 @@ export interface FundusAnalysisState {
   originalImages: { os?: string; od?: string };
   results: BilateralComprehensiveResult | null;
   compareMode: boolean;
+  inferenceMode: InferenceMode;
 
   setPatientId: (id: string) => void;
   setActiveEye: (eye: EyeSide) => void;
   setCompareMode: (on: boolean) => void;
+  setInferenceMode: (mode: InferenceMode) => void;
   setOriginalImage: (eye: "OS" | "OD", dataUrl: string) => void;
   setEyeResult: (eye: "OS" | "OD", result: ComprehensiveResult) => void;
   setResults: (results: BilateralComprehensiveResult) => void;
@@ -31,10 +33,12 @@ export const useFundusStore = create<FundusAnalysisState>()((set) => ({
   originalImages: {},
   results: null,
   compareMode: false,
+  inferenceMode: "fast",
 
   setPatientId: (patientId) => set({ patientId }),
   setActiveEye: (activeEye) => set({ activeEye }),
   setCompareMode: (compareMode) => set({ compareMode }),
+  setInferenceMode: (inferenceMode) => set({ inferenceMode }),
   setOriginalImage: (eye, dataUrl) =>
     set((s) => ({
       originalImages: {
@@ -62,5 +66,6 @@ export const useFundusStore = create<FundusAnalysisState>()((set) => ({
       originalImages: {},
       results: null,
       compareMode: false,
+      inferenceMode: "fast",
     }),
 }));

@@ -22,6 +22,8 @@ export default function FundusUploadPage() {
   const activeEye = useFundusStore((s) => s.activeEye);
   const setPatientId = useFundusStore((s) => s.setPatientId);
   const setActiveEye = useFundusStore((s) => s.setActiveEye);
+  const inferenceMode = useFundusStore((s) => s.inferenceMode);
+  const setInferenceMode = useFundusStore((s) => s.setInferenceMode);
 
   const { analyze, phase, error, isPending, resetPhase } = useFundusAnalysis();
 
@@ -66,7 +68,7 @@ export default function FundusUploadPage() {
       <header>
         <h1 className="text-2xl font-bold text-white">안저 이미지 업로드</h1>
         <p className="mt-1 text-sm text-slate-400">
-          OS/OD 선택 후 업로드하면 4질환 종합 분석(comprehensive)을 실행합니다.
+          OS/OD 선택 후 업로드하면 5질환 종합 분석(comprehensive)을 실행합니다.
         </p>
       </header>
 
@@ -155,6 +157,38 @@ export default function FundusUploadPage() {
             </div>
           </fieldset>
 
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-slate-300">추론 모드</legend>
+            <div className="flex gap-2">
+              {(
+                [
+                  { value: "fast" as const, label: "⚡ Fast", hint: "v10 · ~1s" },
+                  { value: "precise" as const, label: "🔍 Precise", hint: "5모델 · ~40s" },
+                ] as const
+              ).map(({ value, label, hint }) => (
+                <label
+                  key={value}
+                  className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm transition-colors ${
+                    inferenceMode === value
+                      ? "border-violet-500 bg-violet-950/60 text-violet-200"
+                      : "border-slate-700 text-slate-400 hover:border-slate-500"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="inference-mode"
+                    value={value}
+                    checked={inferenceMode === value}
+                    onChange={() => setInferenceMode(value)}
+                    className="sr-only"
+                  />
+                  <span className="block font-medium">{label}</span>
+                  <span className="mt-0.5 block text-xs opacity-80">{hint}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           {selectedFile && (
             <p className="truncate text-xs text-slate-500">{selectedFile.name}</p>
           )}
@@ -168,7 +202,7 @@ export default function FundusUploadPage() {
             {busy ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden />
-                {phase === "uploading" ? "업로드 중…" : "4질환 분석 중…"}
+                {phase === "uploading" ? "업로드 중…" : "5질환 분석 중…"}
               </>
             ) : (
               "종합 분석 시작"

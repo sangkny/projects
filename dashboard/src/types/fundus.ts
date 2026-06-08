@@ -123,7 +123,11 @@ export interface OverallAssessment {
   primary_concern: string;
   findings: string[];
   recommendation: string;
+  inference_mode?: string | null;
+  inference_time_ms?: number | null;
 }
+
+export type InferenceMode = "fast" | "precise";
 
 export interface ComprehensiveHeatmaps {
   dr?: HeatmapPayload;
