@@ -41,10 +41,10 @@ export default function AdminModelsPage() {
             <Activity className="size-5 text-violet-400" aria-hidden />
             <div>
               <p className="text-sm font-semibold text-violet-200">
-                v10 fast mode · composite=0.8818 · 웜 추론 ~340ms
+                v10c fast mode · composite=0.8842 · GL AUC=0.835 · 웜 ~340ms
               </p>
               <p className="text-xs text-violet-300/80">
-                5-head ONNX · comprehensive ?mode=fast · GL AUC=0.804 → v10b 재훈련
+                5-head ONNX (export_v10.py) · comprehensive ?mode=fast · gl_weight=0.28 ✅ 운영
               </p>
             </div>
             <span className="ml-auto rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-white">

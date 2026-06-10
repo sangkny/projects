@@ -71,14 +71,14 @@ export const PRODUCTION_MODELS: ModelRecord[] = [
   },
   {
     id: "v10_multitask",
-    disease: "Multitask v10",
-    version: "retinal_v10",
+    disease: "Multitask v10c",
+    version: "retinal_v10c",
     metric: "mAUC",
-    metric_value: 0.8818,
+    metric_value: 0.8842,
     status: "production",
     deployed_at: "2026-06",
-    notes: "fast mode · composite=0.8818 · GL AUC=0.804 · v10b 재훈련 예정",
-    onnx_path: "models/retinal_v10.onnx",
+    notes: "fast mode · composite=0.8842 · GL AUC=0.835 · gl_weight=0.28 · export_v10.py",
+    onnx_path: "models/retinal_v10c.onnx",
   },
 ];
 
