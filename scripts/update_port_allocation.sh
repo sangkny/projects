@@ -97,8 +97,44 @@ if conflicts:
     for p, projs in sorted(conflicts.items(), key=lambda x: int(x[0])):
         content += f"| **{p}** | {' vs '.join(projs)} |\n"
 else:
-    content += "✅ **충돌 없음** — 모든 포트 고유\n"
+    content += "✅ **MEDI-IOT compose 포트** — Docker 프로젝트 간 호스트 포트 충돌 없음\n"
 
+# Docker 외부 서비스 (compose 자동 추출 대상 아님 — 수동 SSOT)
+EXTERNAL_SERVICES = """
+## 외부 서비스 (Docker 외부)
+
+| 서비스 | 호스트 포트 | 실행 위치 | 비고 |
+|--------|-----------|----------|------|
+| **LM Studio** | **1234** | Windows (`192.168.0.12`) | Serve on Local Network 필수 |
+| **GPU 서버 SSH** | **22** | `192.168.0.23` | `medi-train:gpu` · CNN 훈련 |
+| GPU 서버 (Docker) | — | `192.168.0.23` | 호스트 포트 외부 미노출 |
+
+### ⚠️ 포트 충돌 주의 (외부 서비스)
+
+| 충돌 상황 | 결과 | 해결 |
+|----------|------|------|
+| SVG-Stock 실행 중 + LM Studio **8000** | ❌ LM Studio 접근 불가 | LM Studio **1234** 사용 |
+| SVG-Stock + MEDI-IOT 동시 실행 | ⚠️ 호스트 **8000** 점유 | SVG-Stock **단독 실행** 원칙 |
+
+### LM Studio 설정 (필수)
+
+| 항목 | 값 |
+|------|-----|
+| Port | **1234** |
+| Serve on Local Network | **✅ 활성화** |
+
+**접근 URL**
+
+| 환경 | URL |
+|------|-----|
+| PowerShell | `http://localhost:1234/v1` |
+| WSL / Docker (호스트) | `http://192.168.0.12:1234/v1` |
+| Docker 컨테이너 | `http://host.docker.internal:1234/v1` |
+
+> 상세: `docs/NETWORK-GUIDE.md` · `docker-compose.dev.yml` `LOCAL_BASE_URL`
+"""
+
+content += EXTERNAL_SERVICES
 content += "\n---\n\n## 프로젝트별 포트 현황\n\n"
 
 for proj, data in project_data.items():
@@ -125,6 +161,7 @@ content += """---
 | MEDI-IOT + paperclip | ✅ 가능 | — |
 | MEDI-IOT + proposal | ✅ 가능 | — |
 | SVG-Stock + 다른 프로젝트 | ⚠️ 주의 | 80/9000/8000 점유 — 단독 실행 권장 |
+| LM Studio + SVG-Stock | ⚠️ 주의 | LM Studio는 **1234** (SVG-Stock이 8000 점유) |
 
 ---
 

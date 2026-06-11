@@ -9,25 +9,39 @@
 
 ## ⚠️ 충돌 현황
 
-✅ **MEDI-IOT compose 포트** — 호스트 간 충돌 없음
+✅ **MEDI-IOT compose 포트** — Docker 프로젝트 간 호스트 포트 충돌 없음
 
-### LM Studio (호스트 프로세스 · Docker 외부)
+## 외부 서비스 (Docker 외부)
 
-| 서비스 | 호스트 포트 | URL | 비고 |
-|--------|------------|-----|------|
-| **LM Studio** | **1234** | `http://192.168.0.12:1234/v1` | Serve on Local Network 필수 |
-| Docker → LM Studio | — | `http://host.docker.internal:1234/v1` | `docker-compose.dev.yml` |
-| WSL → LM Studio | — | `http://192.168.0.12:1234/v1` | Windows LAN IP 사용 |
+| 서비스 | 호스트 포트 | 실행 위치 | 비고 |
+|--------|-----------|----------|------|
+| **LM Studio** | **1234** | Windows (`192.168.0.12`) | Serve on Local Network 필수 |
+| **GPU 서버 SSH** | **22** | `192.168.0.23` | `medi-train:gpu` · CNN 훈련 |
+| GPU 서버 (Docker) | — | `192.168.0.23` | 호스트 포트 외부 미노출 |
 
-> **2026-06-11**: LM Studio 포트 **8000→1234** 변경 (SVG-Stock `8000` 점유 충돌 해결).  
-> 상세: `docs/NETWORK-GUIDE.md`
+### ⚠️ 포트 충돌 주의 (외부 서비스)
 
-### ⚠️ SVG-Stock 단독 실행
+| 충돌 상황 | 결과 | 해결 |
+|----------|------|------|
+| SVG-Stock 실행 중 + LM Studio **8000** | ❌ LM Studio 접근 불가 | LM Studio **1234** 사용 |
+| SVG-Stock + MEDI-IOT 동시 실행 | ⚠️ 호스트 **8000** 점유 | SVG-Stock **단독 실행** 원칙 |
 
-| 포트 | 점유 | 충돌 |
-|------|------|------|
-| **8000** | SVG-Stock | LM Studio **8000 사용 금지** |
-| 80, 9000, 9001 | SVG-Stock | MEDI compose와 분리 |
+### LM Studio 설정 (필수)
+
+| 항목 | 값 |
+|------|-----|
+| Port | **1234** |
+| Serve on Local Network | **✅ 활성화** |
+
+**접근 URL**
+
+| 환경 | URL |
+|------|-----|
+| PowerShell | `http://localhost:1234/v1` |
+| WSL / Docker (호스트) | `http://192.168.0.12:1234/v1` |
+| Docker 컨테이너 | `http://host.docker.internal:1234/v1` |
+
+> 상세: `docs/NETWORK-GUIDE.md` · `docker-compose.dev.yml` `LOCAL_BASE_URL`
 
 ---
 
@@ -131,6 +145,7 @@
 | MEDI-IOT + paperclip | ✅ 가능 | — |
 | MEDI-IOT + proposal | ✅ 가능 | — |
 | SVG-Stock + 다른 프로젝트 | ⚠️ 주의 | 80/9000/8000 점유 — 단독 실행 권장 |
+| LM Studio + SVG-Stock | ⚠️ 주의 | LM Studio는 **1234** (SVG-Stock이 8000 점유) |
 
 ---
 
