@@ -4,7 +4,7 @@
 #
 # GPU 역할 (2026-05-24 확정):
 #   - 이 파일의 GPU = LM Studio LLM 전용 (호스트 TITAN RTX 24GB)
-#   - LOCAL_* → host.docker.internal:8000 → Windows LM Studio
+#   - LOCAL_* → host.docker.internal:1234 → Windows LM Studio
 #   - CNN 훈련은 여기서 하지 않음 (medi-iot-api OOM). 훈련은 원격 GPU만:
 #       192.168.0.23 (TITAN X 12GB) + training/docker-compose.train.yml
 #   - CNN 추론 = medi-iot-api 컨테이너 내 ONNX Runtime (CPU, gpus: 미사용)
@@ -28,8 +28,8 @@ x-llm-env: &llm-env
   LLM_EMBED_PROVIDER: ${LLM_EMBED_PROVIDER:-local}
   LLM_FALLBACK_ENABLED: "true"
 
-  # ── Local Provider — LM Studio on dev PC (TITAN RTX 24GB, :8000) ──
-  LOCAL_BASE_URL: http://host.docker.internal:8000/v1
+  # ── Local Provider — LM Studio on dev PC (TITAN RTX 24GB, :1234) ──
+  LOCAL_BASE_URL: http://host.docker.internal:1234/v1
   LOCAL_API_KEY: lm-studio
   LOCAL_FAST_MODEL: google/gemma-4-e4b
   LOCAL_HEAVY_MODEL: google/gemma-4-26b-a4b
@@ -53,7 +53,7 @@ x-llm-env: &llm-env
   LLM_SUMMARY_TRIGGER: ${LLM_SUMMARY_TRIGGER:-chars}
   LLM_SUMMARY_MAX_TOKENS: ${LLM_SUMMARY_MAX_TOKENS:-512}
   LLM_SUMMARY_MODEL: ${LLM_SUMMARY_MODEL:-google/gemma-4-e4b}
-  LLM_SUMMARY_BASE_URL: ${LLM_SUMMARY_BASE_URL:-http://host.docker.internal:8000/v1}
+  LLM_SUMMARY_BASE_URL: ${LLM_SUMMARY_BASE_URL:-http://host.docker.internal:1234/v1}
   LLM_SUMMARY_API_KEY: ${LLM_SUMMARY_API_KEY:-lm-studio}
   LLM_SUMMARY_TIMEOUT: ${LLM_SUMMARY_TIMEOUT:-30}
 
@@ -199,7 +199,7 @@ services:
     environment:
       NODE_ENV: development
       # LM Studio 연결 (OpenClaw에서 직접 호출 시)
-      LLM_BASE_URL: http://host.docker.internal:8000/v1
+      LLM_BASE_URL: http://host.docker.internal:1234/v1
       LLM_API_KEY: lm-studio
       LLM_FAST_MODEL: google/gemma-4-e4b
       # 내부 서비스 연결

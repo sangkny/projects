@@ -1,6 +1,6 @@
 # 개발 PC 전체 Docker 포트 배정표
 
-> **자동 생성**: 2026-06-07 — `bash scripts/update_port_allocation.sh`
+> **자동 생성**: 2026-06-11 — `bash scripts/update_port_allocation.sh`
 > **SSOT**: 각 프로젝트 `docker-compose.yml` (실제 포트 기준)
 > **수정 방법**: docker-compose.yml 수정 후 이 스크립트 재실행
 > **마스터 위치**: `projects/PORT-ALLOCATION.md`
