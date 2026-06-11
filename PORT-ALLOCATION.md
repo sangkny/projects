@@ -9,7 +9,25 @@
 
 ## ⚠️ 충돌 현황
 
-✅ **충돌 없음** — 모든 포트 고유
+✅ **MEDI-IOT compose 포트** — 호스트 간 충돌 없음
+
+### LM Studio (호스트 프로세스 · Docker 외부)
+
+| 서비스 | 호스트 포트 | URL | 비고 |
+|--------|------------|-----|------|
+| **LM Studio** | **1234** | `http://192.168.0.12:1234/v1` | Serve on Local Network 필수 |
+| Docker → LM Studio | — | `http://host.docker.internal:1234/v1` | `docker-compose.dev.yml` |
+| WSL → LM Studio | — | `http://192.168.0.12:1234/v1` | Windows LAN IP 사용 |
+
+> **2026-06-11**: LM Studio 포트 **8000→1234** 변경 (SVG-Stock `8000` 점유 충돌 해결).  
+> 상세: `docs/NETWORK-GUIDE.md`
+
+### ⚠️ SVG-Stock 단독 실행
+
+| 포트 | 점유 | 충돌 |
+|------|------|------|
+| **8000** | SVG-Stock | LM Studio **8000 사용 금지** |
+| 80, 9000, 9001 | SVG-Stock | MEDI compose와 분리 |
 
 ---
 

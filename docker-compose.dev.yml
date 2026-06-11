@@ -9,7 +9,7 @@
 #       192.168.0.23 (TITAN X 12GB) + training/docker-compose.train.yml
 #   - CNN 추론 = medi-iot-api 컨테이너 내 ONNX Runtime (CPU, gpus: 미사용)
 #
-# LM Studio (Windows, 포트 8000) — Ollama 컨테이너 불필요
+# LM Studio (Windows, 포트 1234 — SVG-Stock 8000 충돌 회피) — Ollama 컨테이너 불필요
 # OpenClaw + Paperclip + PostgreSQL + Redis
 # MEDI-IOT + AutoNoGaDa + CoOps
 # ============================================================
