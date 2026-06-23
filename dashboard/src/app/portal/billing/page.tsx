@@ -1,11 +1,15 @@
 import type { ReactElement } from "react";
-import { CreditCard, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
 
 import { useBillingMe } from "../../../hooks/useBillingMe";
+import { useStripePortal } from "../../../hooks/useStripePortal";
 import { cn } from "../../../utils/cn";
 
 export default function BillingPage(): ReactElement {
   const { data, isLoading, isError, error } = useBillingMe();
+  const portal = useStripePortal();
+  const [portalHint, setPortalHint] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -86,8 +90,39 @@ export default function BillingPage(): ReactElement {
               })
             : "— (Free 플랜 또는 미설정)"}
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            data-testid="stripe-portal-button"
+            disabled={portal.isPending}
+            onClick={() => {
+              setPortalHint(null);
+              portal.mutate(undefined, {
+                onSuccess: (res) => {
+                  if (res?.url) window.location.href = res.url;
+                },
+                onError: () => {
+                  setPortalHint("결제 관리 Portal 준비 중 — Stripe 고객 연동 후 이용 가능합니다.");
+                },
+              });
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-admin-primary/40 bg-admin-muted px-4 py-2 text-sm font-medium text-admin-primary hover:border-admin-primary"
+          >
+            {portal.isPending ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <ExternalLink className="size-4" aria-hidden />
+            )}
+            결제 관리
+          </button>
+          {portalHint && (
+            <span className="text-xs text-ink-muted" data-testid="stripe-portal-hint">
+              {portalHint}
+            </span>
+          )}
+        </div>
         <p className="mt-2 text-xs text-ink-subtle">
-          Stripe Customer Portal 연동은 3단계 Admin/Portal 확장에서 추가 예정 · API: GET /api/v1/billing/me
+          API: POST /api/v1/billing/stripe/portal · GET /api/v1/billing/me
         </p>
       </article>
     </div>

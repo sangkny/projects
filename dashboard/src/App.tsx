@@ -1,7 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import AdminLayout from './app/admin/layout'
+import AdminAuditPage from './app/admin/audit/page'
 import AdminModelsPage from './app/admin/models/page'
+import AdminOntologyPage from './app/admin/ontology/page'
+import AdminPerformancePage from './app/admin/performance/page'
 import InternalLayout from './app/internal/layout'
 import PortalLayout from './app/portal/layout'
 import BillingPage from './app/portal/billing/page'
@@ -9,6 +12,7 @@ import FundusResultsPage from './app/portal/fundus/results/page'
 import FundusUploadPage from './app/portal/fundus/upload/page'
 import ReviewsPage from './app/portal/reviews/page'
 import './App.css'
+import { AlertProvider } from './components/shared/ImmediateAlertHost'
 import AutoNoGaDa from './pages/AutoNoGaDa'
 import CoOps from './pages/CoOps'
 import HarnessPage from './pages/Harness'
@@ -18,6 +22,7 @@ import Overview from './pages/Overview'
 
 export default function App() {
   return (
+    <AlertProvider>
     <BrowserRouter basename="/dashboard">
       <Routes>
         <Route path="/" element={<Navigate to="/portal/fundus/upload" replace />} />
@@ -31,6 +36,9 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="models" replace />} />
           <Route path="models" element={<AdminModelsPage />} />
+          <Route path="performance" element={<AdminPerformancePage />} />
+          <Route path="audit" element={<AdminAuditPage />} />
+          <Route path="ontology" element={<AdminOntologyPage />} />
         </Route>
         <Route path="/internal" element={<InternalLayout />}>
           <Route index element={<Overview />} />
@@ -47,5 +55,6 @@ export default function App() {
         <Route path="/coops" element={<Navigate to="/internal/coops" replace />} />
       </Routes>
     </BrowserRouter>
+    </AlertProvider>
   )
 }

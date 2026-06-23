@@ -35,6 +35,10 @@ export function canAccessReviews(role: PortalRole | null): boolean {
   return role === "doctor" || role === "admin";
 }
 
+export function canAccessAdmin(role: PortalRole | null): boolean {
+  return role === "admin";
+}
+
 /** E2E / dev — window hook */
 export function seedPortalSession(role: PortalRole, userId = "doctor"): void {
   usePortalAuthStore.getState().setSession({

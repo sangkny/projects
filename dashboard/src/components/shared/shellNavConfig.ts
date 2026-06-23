@@ -31,9 +31,9 @@ export const PORTAL_NAV: ShellNavItem[] = [
 
 export const ADMIN_NAV: ShellNavItem[] = [
   { to: "/admin/models", label: "모델 현황", icon: Cpu },
-  { to: "/admin/performance", label: "성능 모니터", icon: Activity, disabled: true },
-  { to: "/admin/audit", label: "감사 로그", icon: FileBarChart, disabled: true },
-  { to: "/admin/ontology", label: "Ontology", icon: Network, disabled: true },
+  { to: "/admin/performance", label: "성능 모니터", icon: Activity },
+  { to: "/admin/audit", label: "감사 로그", icon: FileBarChart },
+  { to: "/admin/ontology", label: "Ontology", icon: Network },
 ];
 
 export const INTERNAL_NAV: ShellNavItem[] = [

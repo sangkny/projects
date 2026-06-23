@@ -50,6 +50,15 @@ export function RequireDoctor({ children }: { children: ReactNode }): ReactEleme
   );
 }
 
+/** Admin Console — admin role only */
+export function RequireAdmin({ children }: { children: ReactNode }): ReactElement {
+  return (
+    <RequireRole roles={["admin"]} fallbackTo="/portal/fundus/upload">
+      {children}
+    </RequireRole>
+  );
+}
+
 export function RoleBadge({ className }: { className?: string }): ReactElement | null {
   const role = usePortalAuthStore((s) => s.role);
   if (!role) return null;
@@ -57,7 +66,11 @@ export function RoleBadge({ className }: { className?: string }): ReactElement |
     <span
       className={cn(
         "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-        role === "doctor" ? "bg-primary-muted text-primary" : "bg-surface-muted text-ink-muted",
+        role === "admin"
+          ? "bg-admin-muted text-admin-primary"
+          : role === "doctor"
+            ? "bg-primary-muted text-primary"
+            : "bg-surface-muted text-ink-muted",
         className,
       )}
     >

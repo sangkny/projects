@@ -9,6 +9,7 @@ import { RoleBadge } from "./RequireRole";
 const DEV_ACCOUNTS: { username: string; password: string; role: PortalRole }[] = [
   { username: "doctor", password: "doc123", role: "doctor" },
   { username: "staff", password: "staff123", role: "staff" },
+  { username: "admin", password: "admin123", role: "admin" },
 ];
 
 export function PortalLoginBar(): ReactElement {

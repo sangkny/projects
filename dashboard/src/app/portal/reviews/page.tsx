@@ -5,6 +5,8 @@ import { BilateralView } from "../../../components/BilateralView";
 import { ReviewDecisionBar } from "../../../components/portal/ReviewDecisionBar";
 import { RequireDoctor } from "../../../components/shared/RequireRole";
 import { useClinicalReviews } from "../../../hooks/useClinicalReviews";
+import { pushRejectAlert } from "../../../stores/alertStore";
+import { recordReviewDecision } from "../../../stores/auditLogStore";
 import { useReviewsStore } from "../../../stores/reviewsStore";
 import type { ReviewDecisionAction, ReviewListItem } from "../../../types/clinical";
 import { cn } from "../../../utils/cn";
@@ -74,6 +76,10 @@ function ReviewsPageContent(): ReactElement {
   const handleDecide = async (action: ReviewDecisionAction, notes: string) => {
     if (!selected) return;
     await decide.mutateAsync({ item: selected, action, notes });
+    recordReviewDecision(selected.patientId, action, notes);
+    if (action === "REJECT") {
+      pushRejectAlert("진단 리뷰 REJECT", notes || selected.patientId);
+    }
     const next = items.find((i) => i.id !== selected.id && i.status === "pending_review");
     setSelectedId(next?.id ?? null);
   };

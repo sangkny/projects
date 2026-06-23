@@ -5,6 +5,11 @@ import { Download, GitCompare, Loader2 } from "lucide-react";
 import { BilateralView } from "../../../../components/BilateralView";
 import { useFundusAnalysis } from "../../../../hooks/useFundusAnalysis";
 import { useFundusStore } from "../../../../stores/fundusStore";
+import { recordPipelineFromResults } from "../../../../stores/auditLogStore";
+import {
+  pushRejectAlert,
+  pushUrgentReferralAlert,
+} from "../../../../stores/alertStore";
 import { useReviewsStore } from "../../../../stores/reviewsStore";
 import { buildFhirBundle, downloadJson } from "../../../../utils/fhirExport";
 
@@ -24,8 +29,24 @@ export default function FundusResultsPage() {
     if (!results?.analyzed_at) return;
     if (enqueuedRef.current === results.analyzed_at) return;
     enqueueFromFundus(results, originalImages);
+    recordPipelineFromResults(results);
+    for (const [eye, eyeResult] of [
+      ["OS", results.os],
+      ["OD", results.od],
+    ] as const) {
+      if (!eyeResult) continue;
+      const urgency = eyeResult.overall_assessment?.referral_urgency;
+      if (urgency === "immediate" || urgency === "urgent") {
+        pushUrgentReferralAlert(patientId || eye, urgency);
+      }
+      for (const mod of [eyeResult.dr, eyeResult.glaucoma, eyeResult.amd, eyeResult.myopia]) {
+        if (mod?.decision === "REJECT") {
+          pushRejectAlert(`${eye} 분석`, mod.audit_trail?.reason as string | undefined);
+        }
+      }
+    }
     enqueuedRef.current = results.analyzed_at;
-  }, [results, originalImages, enqueueFromFundus]);
+  }, [results, originalImages, enqueueFromFundus, patientId]);
 
   if (!results?.os && !results?.od) {
     return (

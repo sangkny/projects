@@ -1,10 +1,12 @@
 import { mediApiPath } from "../config/env";
+import type { AuditDecision, AuditLogEntry, AuditLogResponse } from "../types/admin";
 import type {
   BillingMeResponse,
   ReviewDecisionRequest,
   ReviewOut,
   ReviewQueueResponse,
 } from "../types/clinical";
+import type { OntologyStats } from "../types";
 
 const JSON_HEADERS: HeadersInit = {
   Accept: "application/json",
@@ -89,4 +91,65 @@ export async function decideReview(
 
 export async function fetchBillingMe(token: string): Promise<BillingMeResponse> {
   return mediFetch<BillingMeResponse>("/api/v1/billing/me", { token });
+}
+
+export async function createStripePortalSession(
+  token: string,
+  returnUrl: string,
+): Promise<{ session_id: string; url: string }> {
+  return mediFetch("/api/v1/billing/stripe/portal", {
+    method: "POST",
+    token,
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ return_url: returnUrl }),
+  });
+}
+
+export async function fetchOntologyStats(): Promise<OntologyStats> {
+  return mediFetch<OntologyStats>("/api/v1/ontology/stats");
+}
+
+export async function fetchAdminAuditLogs(filters?: {
+  from?: string;
+  to?: string;
+  decision?: AuditDecision | "";
+}): Promise<AuditLogResponse> {
+  const params = new URLSearchParams();
+  if (filters?.from) params.set("from", filters.from);
+  if (filters?.to) params.set("to", filters.to);
+  if (filters?.decision) params.set("decision", filters.decision);
+  const qs = params.toString();
+  const raw = await mediFetch<{
+    items: Array<{
+      id: string;
+      kind: AuditLogEntry["kind"];
+      occurred_at: string;
+      patient_id?: string;
+      partner_id?: string;
+      decision?: AuditDecision;
+      reason?: string;
+      threshold?: number;
+      confidence?: number;
+      source: string;
+      detail?: string;
+    }>;
+    total: number;
+  }>(`/api/v1/dashboard/audit-logs${qs ? `?${qs}` : ""}`);
+
+  return {
+    total: raw.total,
+    items: raw.items.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      occurredAt: row.occurred_at,
+      patientId: row.patient_id,
+      partnerId: row.partner_id,
+      decision: row.decision,
+      reason: row.reason,
+      threshold: row.threshold,
+      confidence: row.confidence,
+      source: row.source,
+      detail: row.detail,
+    })),
+  };
 }
