@@ -1,12 +1,12 @@
-import type { CSSProperties, ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import {
   PRODUCTION_MODELS,
-  STATUS_COLORS,
   STATUS_LABELS,
   type ModelRecord,
   type ModelStatus,
 } from "../../types/model";
+import { cn } from "../../utils/cn";
 
 export interface ModelCardProps {
   model: ModelRecord;
@@ -17,25 +17,20 @@ export interface ModelCardProps {
   className?: string;
 }
 
-const cardBase: CSSProperties = {
-  border: "1px solid #E2E8F0",
-  borderRadius: 12,
-  padding: 16,
-  background: "#FFFFFF",
+const STATUS_BADGE_CLASS: Record<ModelStatus, string> = {
+  production: "bg-success",
+  reference: "bg-ink-muted",
+  training: "bg-primary",
+  deprecated: "bg-ink-subtle",
 };
 
 function statusBadge(status: ModelStatus): ReactElement {
   return (
     <span
-      style={{
-        display: "inline-block",
-        padding: "2px 8px",
-        borderRadius: 999,
-        fontSize: 11,
-        fontWeight: 600,
-        color: "#FFF",
-        background: STATUS_COLORS[status],
-      }}
+      className={cn(
+        "inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold text-white",
+        STATUS_BADGE_CLASS[status],
+      )}
     >
       {STATUS_LABELS[status]}
     </span>
@@ -56,63 +51,59 @@ export function ModelCard({
 
   return (
     <article
-      className={className}
-      style={{
-        ...cardBase,
-        opacity: dimmed ? 0.72 : 1,
-        borderColor: isProduction ? STATUS_COLORS.production : cardBase.borderColor as string,
-      }}
+      className={cn(
+        "rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-[var(--shadow-card)]",
+        isProduction && "border-success",
+        dimmed && "opacity-[0.72]",
+        className,
+      )}
       aria-label={`${model.disease} model ${model.version}`}
     >
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>
+      <header className="flex items-center justify-between gap-2">
+        <h4 className="m-0 text-[15px] font-bold">
           {isProduction && "🟢 "}
           {model.disease}: {model.version}
         </h4>
         {statusBadge(model.status)}
       </header>
 
-      <dl style={{ margin: "12px 0 0", fontSize: 13, color: "#475569" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+      <dl className="mt-3 mb-0 text-[13px] text-ink-secondary">
+        <div className="mb-1 flex justify-between">
           <dt>{model.metric}</dt>
-          <dd style={{ margin: 0, fontWeight: 600 }}>{model.metric_value.toFixed(4)}</dd>
+          <dd className="m-0 font-semibold">{model.metric_value.toFixed(4)}</dd>
         </div>
         {model.confidence != null && (
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <div className="mb-1 flex justify-between">
             <dt>Confidence</dt>
-            <dd style={{ margin: 0 }}>{model.confidence.toFixed(3)}</dd>
+            <dd className="m-0">{model.confidence.toFixed(3)}</dd>
           </div>
         )}
         {model.deployed_at && (
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div className="flex justify-between">
             <dt>배포</dt>
-            <dd style={{ margin: 0 }}>{model.deployed_at}</dd>
+            <dd className="m-0">{model.deployed_at}</dd>
           </div>
         )}
       </dl>
 
       {isTraining && trainingProgress != null && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>훈련 진행</div>
-          <div style={{ height: 8, borderRadius: 4, background: "#E2E8F0" }}>
+        <div className="mt-3">
+          <div className="mb-1 text-xs text-ink-muted">훈련 진행</div>
+          <div className="h-2 rounded bg-border">
             <div
-              style={{
-                width: `${Math.min(100, trainingProgress)}%`,
-                height: "100%",
-                borderRadius: 4,
-                background: STATUS_COLORS.training,
-              }}
+              className="h-full rounded bg-primary"
+              style={{ width: `${Math.min(100, trainingProgress)}%` }}
             />
           </div>
         </div>
       )}
 
       {model.notes && (
-        <p style={{ margin: "10px 0 0", fontSize: 12, color: "#64748B" }}>{model.notes}</p>
+        <p className="mt-2.5 mb-0 text-xs text-ink-muted">{model.notes}</p>
       )}
 
       {isProduction && (
-        <footer style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <footer className="mt-3.5 flex flex-wrap gap-2">
           {onDetail && (
             <ActionButton label="상세" onClick={() => onDetail(model.id)} />
           )}
@@ -125,8 +116,8 @@ export function ModelCard({
         </footer>
       )}
 
-      <p style={{ margin: "10px 0 0", fontSize: 11 }}>
-        <a href="/book/part7/ch41-model-version-history.md" style={{ color: "#2563EB" }}>
+      <p className="mt-2.5 mb-0 text-[11px]">
+        <a href="/book/part7/ch41-model-version-history.md" className="text-primary hover:underline">
           ch41 버전 계보 →
         </a>
       </p>
@@ -147,15 +138,12 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      style={{
-        padding: "6px 12px",
-        fontSize: 12,
-        borderRadius: 6,
-        border: "1px solid",
-        borderColor: variant === "danger" ? "#FCA5A5" : "#CBD5E1",
-        background: variant === "danger" ? "#FEF2F2" : "#F8FAFC",
-        cursor: "pointer",
-      }}
+      className={cn(
+        "cursor-pointer rounded-md border px-3 py-1.5 text-xs",
+        variant === "danger"
+          ? "border-red-300 bg-danger-muted"
+          : "border-border-strong bg-surface-muted hover:bg-border",
+      )}
     >
       {label}
     </button>
@@ -171,13 +159,7 @@ export function ModelCardGrid({
   trainingProgress?: Record<string, number>;
 }): ReactElement {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 16,
-      }}
-    >
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
       {models.map((m) => (
         <ModelCard key={m.id} model={m} trainingProgress={trainingProgress?.[m.id]} />
       ))}

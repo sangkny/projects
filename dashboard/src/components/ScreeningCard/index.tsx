@@ -1,56 +1,46 @@
-import { useState, type CSSProperties, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 import {
-  URGENCY_COLORS,
   type ReferralUrgency,
   type ScreeningFinding,
   type ScreeningResult,
 } from "../../types/fundus";
+import { cn } from "../../utils/cn";
 
 export interface ScreeningCardProps {
   screening: ScreeningResult;
   className?: string;
 }
 
-const RISK_COLORS: Record<string, string> = {
-  low: "#16A34A",
-  moderate: "#CA8A04",
-  high: "#EA580C",
-  urgent: "#DC2626",
+const RISK_TEXT_CLASS: Record<string, string> = {
+  low: "text-success",
+  moderate: "text-warning",
+  high: "text-warning-strong",
+  urgent: "text-danger",
 };
 
-function urgencyBorder(urgency: ReferralUrgency): string {
-  if (urgency === "immediate") return URGENCY_COLORS.immediate;
-  if (urgency === "urgent") return URGENCY_COLORS.urgent;
-  if (urgency === "routine") return URGENCY_COLORS.routine;
-  return URGENCY_COLORS.none;
-}
+const URGENCY_BORDER_CLASS: Record<ReferralUrgency, string> = {
+  immediate: "border-danger",
+  urgent: "border-warning-strong",
+  routine: "border-warning",
+  none: "border-success",
+};
 
 function FindingRow({ finding }: { finding: ScreeningFinding }): ReactElement {
   return (
-    <li
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 8,
-        padding: "6px 0",
-        borderBottom: "1px solid #F1F5F9",
-        fontSize: 13,
-      }}
-    >
+    <li className="flex items-center justify-between gap-2 border-b border-slate-100 py-1.5 text-[13px]">
       <div>
-        <span style={{ fontWeight: 600, textTransform: "uppercase" }}>{finding.disease}</span>
+        <span className="font-semibold uppercase">{finding.disease}</span>
         {finding.korean_name && (
-          <span style={{ marginLeft: 6, color: "#64748B" }}>{finding.korean_name}</span>
+          <span className="ml-1.5 text-ink-muted">{finding.korean_name}</span>
         )}
         {finding.icd10 && (
-          <span style={{ marginLeft: 6, fontSize: 11, color: "#94A3B8" }}>{finding.icd10}</span>
+          <span className="ml-1.5 text-[11px] text-ink-subtle">{finding.icd10}</span>
         )}
       </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ fontWeight: 700 }}>{(finding.probability * 100).toFixed(1)}%</div>
-        <div style={{ fontSize: 11, color: RISK_COLORS[finding.risk_level] ?? "#64748B" }}>
+      <div className="text-right">
+        <div className="font-bold">{(finding.probability * 100).toFixed(1)}%</div>
+        <div className={cn("text-[11px]", RISK_TEXT_CLASS[finding.risk_level] ?? "text-ink-muted")}>
           {finding.risk_level}
         </div>
       </div>
@@ -60,63 +50,43 @@ function FindingRow({ finding }: { finding: ScreeningFinding }): ReactElement {
 
 export function ScreeningCard({ screening, className }: ScreeningCardProps): ReactElement {
   const [expanded, setExpanded] = useState(false);
-  const border = urgencyBorder(screening.referral_urgency);
   const top = screening.top_findings?.length
     ? screening.top_findings
     : screening.findings.slice(0, 3);
 
-  const cardStyle: CSSProperties = {
-    border: `2px solid ${border}`,
-    borderRadius: 10,
-    padding: 12,
-    background: screening.normal ? "#F0FDF4" : "#FFFFFF",
-  };
-
   return (
-    <section className={className} style={cardStyle} aria-label="28-class 다질환 스크리닝">
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 8,
-          marginBottom: 10,
-          flexWrap: "wrap",
-        }}
-      >
+    <section
+      className={cn(
+        "rounded-[10px] border-2 p-3",
+        URGENCY_BORDER_CLASS[screening.referral_urgency],
+        screening.normal ? "bg-success-muted" : "bg-surface",
+        className,
+      )}
+      aria-label="28-class 다질환 스크리닝"
+    >
+      <header className="mb-2.5 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>다질환 스크리닝</h4>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#64748B" }}>
+          <h4 className="m-0 text-sm font-bold">다질환 스크리닝</h4>
+          <p className="mt-1 mb-0 text-[11px] text-ink-muted">
             {screening.model_used || "multidisease_v1"}
           </p>
         </div>
         <span
-          style={{
-            padding: "3px 10px",
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 600,
-            background: screening.normal ? "#DCFCE7" : "#FEE2E2",
-            color: screening.normal ? "#166534" : "#991B1B",
-          }}
+          className={cn(
+            "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+            screening.normal ? "bg-green-100 text-green-800" : "bg-red-100 text-red-900",
+          )}
         >
           {screening.normal ? "정상" : "비정상"}
         </span>
       </header>
 
       {screening.urgent_diseases.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+        <div className="mb-2.5 flex flex-wrap gap-1.5">
           {screening.urgent_diseases.map((d) => (
             <span
               key={d}
-              style={{
-                padding: "2px 8px",
-                borderRadius: 6,
-                fontSize: 11,
-                fontWeight: 700,
-                background: "#DC2626",
-                color: "#FFF",
-              }}
+              className="rounded-md bg-danger px-2 py-0.5 text-[11px] font-bold text-white"
             >
               긴급: {d.toUpperCase()}
             </span>
@@ -126,37 +96,28 @@ export function ScreeningCard({ screening, className }: ScreeningCardProps): Rea
 
       {top.length > 0 ? (
         <>
-          <p style={{ margin: "0 0 6px", fontSize: 12, color: "#64748B", fontWeight: 600 }}>
-            상위 소견
-          </p>
-          <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+          <p className="mb-1.5 mt-0 text-xs font-semibold text-ink-muted">상위 소견</p>
+          <ul className="m-0 list-none p-0">
             {top.map((f) => (
               <FindingRow key={f.disease} finding={f} />
             ))}
           </ul>
         </>
       ) : (
-        <p style={{ margin: 0, fontSize: 13, color: "#64748B" }}>탐지된 소견 없음</p>
+        <p className="m-0 text-[13px] text-ink-muted">탐지된 소견 없음</p>
       )}
 
       {screening.findings.length > top.length && (
-        <div style={{ marginTop: 10 }}>
+        <div className="mt-2.5">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            style={{
-              padding: "4px 10px",
-              fontSize: 12,
-              borderRadius: 6,
-              border: "1px solid #CBD5E1",
-              background: "#F8FAFC",
-              cursor: "pointer",
-            }}
+            className="cursor-pointer rounded-md border border-border-strong bg-surface-muted px-2.5 py-1 text-xs hover:bg-border"
           >
             {expanded ? "전체 소견 접기" : `전체 소견 펼치기 (${screening.findings.length})`}
           </button>
           {expanded && (
-            <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
+            <ul className="mt-2 mb-0 list-none p-0">
               {screening.findings.map((f) => (
                 <FindingRow key={`all-${f.disease}`} finding={f} />
               ))}
@@ -166,7 +127,7 @@ export function ScreeningCard({ screening, className }: ScreeningCardProps): Rea
       )}
 
       {screening.recommendations.length > 0 && (
-        <p style={{ margin: "10px 0 0", fontSize: 12, color: "#475569" }}>
+        <p className="mt-2.5 mb-0 text-xs text-ink-secondary">
           {screening.recommendations[0]}
         </p>
       )}

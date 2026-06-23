@@ -1,7 +1,8 @@
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import AdminLayout from './app/admin/layout'
 import AdminModelsPage from './app/admin/models/page'
+import InternalLayout from './app/internal/layout'
 import PortalLayout from './app/portal/layout'
 import FundusResultsPage from './app/portal/fundus/results/page'
 import FundusUploadPage from './app/portal/fundus/upload/page'
@@ -13,66 +14,35 @@ import MediIOT from './pages/MediIOT'
 import OntologyMonitor from './pages/OntologyMonitor'
 import Overview from './pages/Overview'
 
-function NavBar() {
-  const linkCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? 'navlink active' : 'navlink'
-
-  return (
-    <nav className="topnav">
-      <span className="brand">MEDIIOT 통합 대시보드</span>
-      <NavLink to="/" end className={linkCls}>
-        Overview
-      </NavLink>
-      <NavLink to="/ontology" className={linkCls}>
-        OntologyMonitor
-      </NavLink>
-      <NavLink to="/harness" className={linkCls}>
-        Harness
-      </NavLink>
-      <NavLink to="/medi" className={linkCls}>
-        MEDI-IOT
-      </NavLink>
-      <NavLink to="/autonogada" className={linkCls}>
-        AutoNoGaDa
-      </NavLink>
-      <NavLink to="/coops" className={linkCls}>
-        CoOps
-      </NavLink>
-      <NavLink to="/portal/fundus/upload" className={linkCls}>
-        Portal
-      </NavLink>
-      <NavLink to="/admin/models" className={linkCls}>
-        Admin
-      </NavLink>
-    </nav>
-  )
-}
-
 export default function App() {
   return (
     <BrowserRouter basename="/dashboard">
-      <div className="app-shell">
-        <header className="app-header">
-          <NavBar />
-        </header>
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/ontology" element={<OntologyMonitor />} />
-            <Route path="/harness" element={<HarnessPage />} />
-            <Route path="/medi" element={<MediIOT />} />
-            <Route path="/autonogada" element={<AutoNoGaDa />} />
-            <Route path="/coops" element={<CoOps />} />
-            <Route path="/portal" element={<PortalLayout />}>
-              <Route path="fundus/upload" element={<FundusUploadPage />} />
-              <Route path="fundus/results" element={<FundusResultsPage />} />
-            </Route>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route path="models" element={<AdminModelsPage />} />
-            </Route>
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        <Route path="/" element={<Navigate to="/portal/fundus/upload" replace />} />
+        <Route path="/portal" element={<PortalLayout />}>
+          <Route index element={<Navigate to="fundus/upload" replace />} />
+          <Route path="fundus/upload" element={<FundusUploadPage />} />
+          <Route path="fundus/results" element={<FundusResultsPage />} />
+        </Route>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="models" replace />} />
+          <Route path="models" element={<AdminModelsPage />} />
+        </Route>
+        <Route path="/internal" element={<InternalLayout />}>
+          <Route index element={<Overview />} />
+          <Route path="ontology" element={<OntologyMonitor />} />
+          <Route path="harness" element={<HarnessPage />} />
+          <Route path="medi" element={<MediIOT />} />
+          <Route path="autonogada" element={<AutoNoGaDa />} />
+          <Route path="coops" element={<CoOps />} />
+        </Route>
+        {/* Legacy paths → internal shell */}
+        <Route path="/ontology" element={<Navigate to="/internal/ontology" replace />} />
+        <Route path="/harness" element={<Navigate to="/internal/harness" replace />} />
+        <Route path="/medi" element={<Navigate to="/internal/medi" replace />} />
+        <Route path="/autonogada" element={<Navigate to="/internal/autonogada" replace />} />
+        <Route path="/coops" element={<Navigate to="/internal/coops" replace />} />
+      </Routes>
     </BrowserRouter>
   )
 }

@@ -29,8 +29,8 @@ export default function AdminModelsPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold text-white">모델 현황</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-2xl font-bold text-ink">모델 현황</h1>
+        <p className="mt-1 text-sm text-ink-muted">
           ch41 SSOT · 운영 5질환 + v10 fast mode
         </p>
       </header>

@@ -1,0 +1,55 @@
+/**
+ * MEDI-IOT Dashboard design tokens
+ * SSOT: book/part7/ch42-dashboard-web-ux.md §42.3
+ * (frontend-design public skill unavailable — ch42 tokens applied)
+ */
+@theme {
+  /* Brand — User Portal vs Admin Console */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-muted: #eff6ff;
+  --color-admin-primary: #0f766e;
+  --color-admin-primary-hover: #0d9488;
+  --color-admin-muted: #f0fdfa;
+
+  /* Semantic */
+  --color-success: #16a34a;
+  --color-success-muted: #f0fdf4;
+  --color-warning: #ca8a04;
+  --color-warning-strong: #ea580c;
+  --color-warning-muted: #fff7ed;
+  --color-danger: #dc2626;
+  --color-danger-muted: #fef2f2;
+  --color-info-muted: #eff6ff;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-elevated: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Text */
+  --color-ink: #0f172a;
+  --color-ink-secondary: #475569;
+  --color-ink-muted: #64748b;
+  --color-ink-subtle: #94a3b8;
+
+  /* Disease accents (ch41 / screening) */
+  --color-disease-dr: #7c3aed;
+  --color-disease-gl: #0891b2;
+  --color-disease-amd: #d97706;
+  --color-disease-myo: #2563eb;
+  --color-disease-multi: #0f766e;
+
+  /* Admin dark shell */
+  --color-admin-surface: #020617;
+  --color-admin-surface-elevated: #0f172a;
+
+  /* Typography — Pretendard / Inter per ch42 */
+  --font-sans: "Pretendard", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Radius & shadow */
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+}

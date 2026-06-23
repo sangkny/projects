@@ -1,7 +1,8 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 #root {
@@ -15,4 +16,21 @@
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
+}
+
+/* Legacy internal pages (Overview, Harness, …) */
+.app-main-internal .page h1 {
+  margin: 0 0 0.45rem;
+  color: #e8eefc;
+  font-weight: 700;
+}
+
+.app-main-internal .page h2 {
+  color: #bed2ff;
+  margin-top: 1.75rem;
+}
+
+.app-main-internal .muted {
+  color: #8aa7d9;
 }

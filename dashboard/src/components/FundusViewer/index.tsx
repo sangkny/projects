@@ -1,6 +1,7 @@
-import { useCallback, useState, type CSSProperties, type ReactElement, type WheelEvent } from "react";
+import { useCallback, useState, type ReactElement, type WheelEvent } from "react";
 
 import type { LesionAnnotation } from "../../types/fundus";
+import { cn } from "../../utils/cn";
 
 export interface FundusViewerProps {
   /** Original fundus image (data URL or https) */
@@ -14,16 +15,6 @@ export interface FundusViewerProps {
   onDownload?: (kind: "original" | "heatmap" | "overlay") => void;
   className?: string;
 }
-
-const viewerStyle: CSSProperties = {
-  position: "relative",
-  width: "100%",
-  aspectRatio: "4/3",
-  borderRadius: 12,
-  overflow: "hidden",
-  background: "#0F172A",
-  touchAction: "none",
-};
 
 export function FundusViewer({
   originalSrc,
@@ -47,24 +38,29 @@ export function FundusViewer({
     setZoom((z) => Math.min(4, Math.max(1, z + (e.deltaY > 0 ? -0.1 : 0.1))));
   }, []);
 
+  const lesionChipClass = (active: boolean) =>
+    cn(
+      "cursor-pointer rounded-full border border-border-strong px-2.5 py-1 text-xs",
+      active ? "bg-primary-muted" : "bg-surface",
+    );
+
   return (
     <div className={className}>
       {eyeSide && (
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#334155" }}>
+        <div className="mb-2 text-[13px] font-semibold text-ink-secondary">
           {eyeSide === "OS" ? "좌안 (OS)" : "우안 (OD)"}
         </div>
       )}
 
       <div
-        style={viewerStyle}
+        className="relative aspect-[4/3] w-full touch-none overflow-hidden rounded-[var(--radius-card)] bg-admin-surface-elevated"
         onWheel={handleWheel}
         role="img"
         aria-label="안저 GradCAM 비교 뷰어"
       >
         <div
+          className="absolute inset-0"
           style={{
-            position: "absolute",
-            inset: 0,
             transform: `scale(${zoom})`,
             transformOrigin: "center center",
           }}
@@ -72,22 +68,15 @@ export function FundusViewer({
           <img
             src={originalSrc}
             alt="원본 안저"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+            className="absolute inset-0 h-full w-full object-contain"
             draggable={false}
           />
           {hasHeatmap && heatmapSrc && (
             <img
               src={heatmapSrc.startsWith("data:") ? heatmapSrc : `data:image/jpeg;base64,${heatmapSrc}`}
               alt="GradCAM heatmap"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                clipPath: `inset(0 ${100 - slider}% 0 0)`,
-                opacity: 0.85,
-              }}
+              className="absolute inset-0 h-full w-full object-contain opacity-85"
+              style={{ clipPath: `inset(0 ${100 - slider}% 0 0)` }}
               draggable={false}
             />
           )}
@@ -101,19 +90,13 @@ export function FundusViewer({
             value={slider}
             onChange={(e) => setSlider(Number(e.target.value))}
             aria-label="원본과 히트맵 비교 슬라이더"
-            style={{
-              position: "absolute",
-              bottom: 12,
-              left: "10%",
-              width: "80%",
-              zIndex: 2,
-            }}
+            className="absolute bottom-3 left-[10%] z-[2] w-[80%]"
           />
         )}
       </div>
 
       {(lesionAnnotations.length > 0 || hotspotRegions.length > 0) && (
-        <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           {lesionAnnotations.map((lesion) => (
             <button
               key={`${lesion.type}-${lesion.region}`}
@@ -121,14 +104,7 @@ export function FundusViewer({
               onClick={() =>
                 setActiveLesion(activeLesion === lesion.type ? null : lesion.type)
               }
-              style={{
-                padding: "4px 10px",
-                borderRadius: 999,
-                border: "1px solid #CBD5E1",
-                background: highlighted.includes(lesion.type) ? "#DBEAFE" : "#FFF",
-                fontSize: 12,
-                cursor: "pointer",
-              }}
+              className={lesionChipClass(highlighted.includes(lesion.type))}
             >
               {lesion.type}
               {lesion.region ? ` · ${lesion.region}` : ""}
@@ -141,14 +117,7 @@ export function FundusViewer({
                 key={r}
                 type="button"
                 onClick={() => setActiveLesion(activeLesion === r ? null : r)}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #CBD5E1",
-                  background: highlighted.includes(r) ? "#DBEAFE" : "#FFF",
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
+                className={lesionChipClass(highlighted.includes(r))}
               >
                 {r}
               </button>
@@ -157,21 +126,14 @@ export function FundusViewer({
       )}
 
       {onDownload && (
-        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="mt-2.5 flex flex-wrap gap-2">
           {(["original", "heatmap", "overlay"] as const).map((kind) => (
             <button
               key={kind}
               type="button"
               onClick={() => onDownload(kind)}
               disabled={kind !== "original" && !hasHeatmap}
-              style={{
-                padding: "6px 12px",
-                fontSize: 12,
-                borderRadius: 6,
-                border: "1px solid #CBD5E1",
-                background: "#F8FAFC",
-                cursor: "pointer",
-              }}
+              className="cursor-pointer rounded-md border border-border-strong bg-surface-muted px-3 py-1.5 text-xs hover:bg-border disabled:cursor-not-allowed disabled:opacity-50"
             >
               {kind === "original" ? "원본" : kind === "heatmap" ? "히트맵" : "오버레이"} 다운로드
             </button>
@@ -179,7 +141,7 @@ export function FundusViewer({
         </div>
       )}
 
-      <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 8 }}>
+      <p className="mt-2 text-[11px] text-ink-subtle">
         OpenSeadragon 연동 예정 · 휠 줌 {zoom.toFixed(1)}×
       </p>
     </div>
