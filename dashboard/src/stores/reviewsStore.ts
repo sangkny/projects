@@ -1,9 +1,14 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { BilateralComprehensiveResult } from "../types/fundus";
 import type { ReviewApiStatus, ReviewListItem } from "../types/clinical";
 import { urgencyFromAssessment } from "../types/fundus";
+import {
+  createSafeReviewStorage,
+  stripHeavyFromReviewItem,
+  trimReviewQueue,
+} from "../utils/reviewsPersist";
 
 const STORAGE_KEY = "medi-portal-reviews";
 
@@ -30,6 +35,10 @@ function newLocalId(): string {
   return `local-${crypto.randomUUID()}`;
 }
 
+function appendItem(items: ReviewListItem[], item: ReviewListItem): ReviewListItem[] {
+  return trimReviewQueue([item, ...items]);
+}
+
 export const useReviewsStore = create<ReviewsState>()(
   persist(
     (set, get) => ({
@@ -46,7 +55,7 @@ export const useReviewsStore = create<ReviewsState>()(
           snapshot: data,
           originalImages,
         };
-        set((s) => ({ items: [item, ...s.items] }));
+        set((s) => ({ items: appendItem(s.items, item) }));
         return id;
       },
 
@@ -58,23 +67,25 @@ export const useReviewsStore = create<ReviewsState>()(
           if (idx >= 0) {
             const next = [...s.items];
             next[idx] = { ...next[idx], ...item };
-            return { items: next };
+            return { items: trimReviewQueue(next) };
           }
-          return { items: [item, ...s.items] };
+          return { items: appendItem(s.items, item) };
         });
       },
 
       attachSnapshot: (id, snapshot, images) => {
         set((s) => ({
-          items: s.items.map((it) =>
-            it.id === id || it.apiReviewId === id
-              ? {
-                  ...it,
-                  snapshot,
-                  originalImages: images ?? it.originalImages,
-                  primaryConcern: primaryConcernFrom(snapshot),
-                }
-              : it,
+          items: trimReviewQueue(
+            s.items.map((it) =>
+              it.id === id || it.apiReviewId === id
+                ? {
+                    ...it,
+                    snapshot,
+                    originalImages: images ?? it.originalImages,
+                    primaryConcern: primaryConcernFrom(snapshot),
+                  }
+                : it,
+            ),
           ),
         }));
       },
@@ -123,7 +134,13 @@ export const useReviewsStore = create<ReviewsState>()(
         return get().enqueueFromFundus(snapshot, { os: tiny });
       },
     }),
-    { name: STORAGE_KEY },
+    {
+      name: STORAGE_KEY,
+      storage: createJSONStorage(() => createSafeReviewStorage()),
+      partialize: (state) => ({
+        items: trimReviewQueue(state.items.map(stripHeavyFromReviewItem)),
+      }),
+    },
   ),
 );
 
