@@ -37,7 +37,7 @@ function EyeDropZone({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-slate-300">{label}</p>
+      <p className="text-sm font-medium text-ink-secondary">{label}</p>
       <div
         role="button"
         tabIndex={0}
@@ -50,8 +50,8 @@ function EyeDropZone({
         }}
         className={`flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 transition-colors ${
           dragOver
-            ? "border-sky-400 bg-sky-950/40"
-            : "border-slate-700 bg-slate-900/50 hover:border-slate-500"
+            ? "border-primary bg-primary-muted"
+            : "border-border-strong bg-surface hover:border-primary/50"
         }`}
       >
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onChange} />
@@ -59,8 +59,8 @@ function EyeDropZone({
           <img src={preview} alt={`${label} 미리보기`} className="max-h-48 max-w-full rounded-lg object-contain" />
         ) : (
           <>
-            <ImagePlus className="mb-2 size-8 text-slate-500" aria-hidden />
-            <p className="text-xs text-slate-400">드래그 또는 클릭</p>
+            <ImagePlus className="mb-2 size-8 text-ink-subtle" aria-hidden />
+            <p className="text-xs text-ink-muted">드래그 또는 클릭</p>
           </>
         )}
       </div>
@@ -180,7 +180,7 @@ export default function FundusUploadPage() {
       </header>
 
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-slate-300">업로드 방식</legend>
+        <legend className="mb-2 text-sm font-medium text-ink-secondary">업로드 방식</legend>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -192,8 +192,8 @@ export default function FundusUploadPage() {
               key={value}
               className={`cursor-pointer rounded-lg border px-4 py-2 text-sm transition-colors ${
                 uploadMode === value
-                  ? "border-sky-500 bg-sky-950/60 text-sky-200"
-                  : "border-slate-700 text-slate-400 hover:border-slate-500"
+                  ? "border-primary bg-primary-muted text-primary"
+                  : "border-border-strong text-ink-muted hover:border-primary/40"
               }`}
             >
               <input
@@ -270,8 +270,8 @@ export default function FundusUploadPage() {
             }}
             className={`flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 transition-colors ${
               dragOver
-                ? "border-sky-400 bg-sky-950/40"
-                : "border-slate-700 bg-slate-900/50 hover:border-slate-500"
+                ? "border-primary bg-primary-muted"
+                : "border-border-strong bg-surface hover:border-primary/50"
             }`}
           >
             <input
@@ -285,17 +285,17 @@ export default function FundusUploadPage() {
               <img src={preview} alt="업로드 미리보기" className="max-h-64 max-w-full rounded-lg object-contain" />
             ) : (
               <>
-                <ImagePlus className="mb-3 size-10 text-slate-500" aria-hidden />
-                <p className="text-sm font-medium text-slate-300">드래그 앤 드롭 또는 클릭하여 안저 이미지 선택</p>
-                <p className="mt-1 text-xs text-slate-500">JPEG · PNG · DICOM 변환 이미지</p>
+                <ImagePlus className="mb-3 size-10 text-ink-subtle" aria-hidden />
+                <p className="text-sm font-medium text-ink-secondary">드래그 앤 드롭 또는 클릭하여 안저 이미지 선택</p>
+                <p className="mt-1 text-xs text-ink-subtle">JPEG · PNG · DICOM 변환 이미지</p>
               </>
             )}
           </div>
         )}
 
-        <aside className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+        <aside className="space-y-4 rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
           <div>
-            <label htmlFor="patient-id" className="mb-1.5 block text-sm font-medium text-slate-300">
+            <label htmlFor="patient-id" className="mb-1.5 block text-sm font-medium text-ink-secondary">
               환자 ID
             </label>
             <input
@@ -304,21 +304,21 @@ export default function FundusUploadPage() {
               value={patientId}
               onChange={(e) => setPatientId(e.target.value)}
               placeholder="예: PAT-2026-001"
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-sky-500 focus:outline-none"
+              className="w-full rounded-lg border border-border-strong bg-surface-muted px-3 py-2 text-sm text-ink placeholder:text-ink-subtle focus:border-primary focus:outline-none"
             />
           </div>
 
           {uploadMode === "single" && (
             <fieldset>
-              <legend className="mb-2 text-sm font-medium text-slate-300">촬영 안</legend>
+              <legend className="mb-2 text-sm font-medium text-ink-secondary">촬영 안</legend>
               <div className="flex gap-2">
                 {EYE_OPTIONS.map(({ value, label }) => (
                   <label
                     key={value}
                     className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm transition-colors ${
                       activeEye === value
-                        ? "border-sky-500 bg-sky-950/60 text-sky-200"
-                        : "border-slate-700 text-slate-400 hover:border-slate-500"
+                        ? "border-primary bg-primary-muted text-primary"
+                        : "border-border-strong text-ink-muted hover:border-primary/40"
                     }`}
                   >
                     <input
@@ -337,7 +337,7 @@ export default function FundusUploadPage() {
           )}
 
           <fieldset>
-            <legend className="mb-2 text-sm font-medium text-slate-300">추론 모드</legend>
+            <legend className="mb-2 text-sm font-medium text-ink-secondary">추론 모드</legend>
             <div className="flex gap-2">
               {(
                 [
@@ -347,10 +347,11 @@ export default function FundusUploadPage() {
               ).map(({ value, label, hint }) => (
                 <label
                   key={value}
+                  data-testid={`upload-inference-${value}`}
                   className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm transition-colors ${
                     inferenceMode === value
-                      ? "border-violet-500 bg-violet-950/60 text-violet-200"
-                      : "border-slate-700 text-slate-400 hover:border-slate-500"
+                      ? "border-primary bg-primary-muted text-primary"
+                      : "border-border-strong text-ink-muted hover:border-primary/40"
                   }`}
                 >
                   <input
@@ -369,12 +370,12 @@ export default function FundusUploadPage() {
           </fieldset>
 
           {uploadMode === "bilateral" ? (
-            <div className="space-y-1 text-xs text-slate-500">
+            <div className="space-y-1 text-xs text-ink-subtle">
               {odFile && <p className="truncate">OD: {odFile.name}</p>}
               {osFile && <p className="truncate">OS: {osFile.name}</p>}
             </div>
           ) : (
-            selectedFile && <p className="truncate text-xs text-slate-500">{selectedFile.name}</p>
+            selectedFile && <p className="truncate text-xs text-ink-subtle">{selectedFile.name}</p>
           )}
 
           <button
@@ -385,7 +386,8 @@ export default function FundusUploadPage() {
               (uploadMode === "bilateral" ? !odFile || !osFile : !selectedFile || activeEye === "unknown")
             }
             onClick={uploadMode === "bilateral" ? onSubmitBilateral : onSubmitSingle}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="fundus-analyze-submit"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? (
               <>
@@ -402,7 +404,7 @@ export default function FundusUploadPage() {
           {sameImageWarning && uploadMode === "bilateral" && (
             <div
               role="alert"
-              className="rounded-lg border border-amber-900/60 bg-amber-950/40 p-3 text-sm text-amber-200"
+              className="rounded-lg border border-warning/40 bg-warning-muted p-3 text-sm text-warning-strong"
             >
               좌·우안 파일이 동일합니다. 서로 다른 안저 이미지(OD/OS)를 선택하세요.
             </div>
@@ -411,7 +413,7 @@ export default function FundusUploadPage() {
           {error && (
             <div
               role="alert"
-              className="flex gap-2 rounded-lg border border-red-900/60 bg-red-950/40 p-3 text-sm text-red-200"
+              className="flex gap-2 rounded-lg border border-danger/30 bg-danger-muted p-3 text-sm text-danger"
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
               <span>{error}</span>

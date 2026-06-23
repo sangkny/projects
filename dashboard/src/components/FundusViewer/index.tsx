@@ -90,6 +90,7 @@ export function FundusViewer({
             value={slider}
             onChange={(e) => setSlider(Number(e.target.value))}
             aria-label="원본과 히트맵 비교 슬라이더"
+            data-testid="gradcam-slider"
             className="absolute bottom-3 left-[10%] z-[2] w-[80%]"
           />
         )}

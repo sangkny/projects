@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts"
+    "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts",
+    "test:e2e:portal": "playwright test tests/e2e/portal.spec.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.0",

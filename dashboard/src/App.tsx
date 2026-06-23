@@ -4,8 +4,10 @@ import AdminLayout from './app/admin/layout'
 import AdminModelsPage from './app/admin/models/page'
 import InternalLayout from './app/internal/layout'
 import PortalLayout from './app/portal/layout'
+import BillingPage from './app/portal/billing/page'
 import FundusResultsPage from './app/portal/fundus/results/page'
 import FundusUploadPage from './app/portal/fundus/upload/page'
+import ReviewsPage from './app/portal/reviews/page'
 import './App.css'
 import AutoNoGaDa from './pages/AutoNoGaDa'
 import CoOps from './pages/CoOps'
@@ -23,6 +25,8 @@ export default function App() {
           <Route index element={<Navigate to="fundus/upload" replace />} />
           <Route path="fundus/upload" element={<FundusUploadPage />} />
           <Route path="fundus/results" element={<FundusResultsPage />} />
+          <Route path="reviews" element={<ReviewsPage />} />
+          <Route path="billing" element={<BillingPage />} />
         </Route>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="models" replace />} />
@@ -36,7 +40,6 @@ export default function App() {
           <Route path="autonogada" element={<AutoNoGaDa />} />
           <Route path="coops" element={<CoOps />} />
         </Route>
-        {/* Legacy paths → internal shell */}
         <Route path="/ontology" element={<Navigate to="/internal/ontology" replace />} />
         <Route path="/harness" element={<Navigate to="/internal/harness" replace />} />
         <Route path="/medi" element={<Navigate to="/internal/medi" replace />} />

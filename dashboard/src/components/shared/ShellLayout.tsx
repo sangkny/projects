@@ -14,6 +14,7 @@ export interface ShellLayoutProps {
   variant: ShellVariant;
   navItems: ShellNavItem[];
   children: ReactNode;
+  sidebarFooter?: ReactNode;
 }
 
 const CROSS_LINKS = [
@@ -22,7 +23,7 @@ const CROSS_LINKS = [
   { to: "/internal", label: "관제", icon: LayoutDashboard },
 ] as const;
 
-export function ShellLayout({ variant, navItems, children }: ShellLayoutProps): ReactElement {
+export function ShellLayout({ variant, navItems, children, sidebarFooter }: ShellLayoutProps): ReactElement {
   const meta = SHELL_META[variant];
   const isInternal = variant === "internal";
 
@@ -55,6 +56,12 @@ export function ShellLayout({ variant, navItems, children }: ShellLayoutProps): 
           </div>
 
           <ShellNav variant={variant} items={navItems} />
+
+          {sidebarFooter && (
+            <div className={cn("mt-6 border-t pt-4", isInternal ? "border-slate-800" : "border-border")}>
+              {sidebarFooter}
+            </div>
+          )}
 
           <div
             className={cn(

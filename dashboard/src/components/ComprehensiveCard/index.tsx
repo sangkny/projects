@@ -168,6 +168,7 @@ function InferenceModeSwitch({
         }
         aria-pressed={active}
         aria-busy={loading}
+        data-testid={`inference-mode-${value}`}
         className={cn(
           "inline-flex min-w-[72px] flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold",
           loading || active
@@ -339,6 +340,7 @@ export function ComprehensiveCard({
           <button
             type="button"
             onClick={onFhirExport}
+            data-testid="fhir-export-card"
             className="cursor-pointer rounded-lg border border-border-strong bg-surface-muted px-3.5 py-2 text-[13px] hover:bg-border"
           >
             FHIR R4보내기

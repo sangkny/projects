@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   Bot,
+  CreditCard,
   Cpu,
   Eye,
   FileBarChart,
@@ -24,8 +25,8 @@ export interface ShellNavItem {
 export const PORTAL_NAV: ShellNavItem[] = [
   { to: "/portal/fundus/upload", label: "안저 업로드", icon: Upload },
   { to: "/portal/fundus/results", label: "분석 결과", icon: FileBarChart },
-  // Phase 2 — routes TBD
-  { to: "/portal/reviews", label: "진단 리뷰", icon: Eye, disabled: true },
+  { to: "/portal/reviews", label: "진단 리뷰", icon: Eye },
+  { to: "/portal/billing", label: "청구 · 사용량", icon: CreditCard },
 ];
 
 export const ADMIN_NAV: ShellNavItem[] = [

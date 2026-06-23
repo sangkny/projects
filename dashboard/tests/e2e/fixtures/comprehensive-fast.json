@@ -1,0 +1,58 @@
+{
+  "dr": {
+    "dr_grade": 1,
+    "grade": 1,
+    "confidence": 0.82,
+    "decision": "REVISE",
+    "icd10_code": "H35.0",
+    "severity": "mild"
+  },
+  "glaucoma": {
+    "glaucoma_grade": 0,
+    "grade_label": "normal",
+    "label": "normal",
+    "probability": 0.12,
+    "risk_level": "LOW",
+    "confidence": 0.88,
+    "decision": "APPROVE"
+  },
+  "amd": {
+    "amd_grade": 0,
+    "grade_label": "normal",
+    "confidence": 0.91,
+    "decision": "APPROVE"
+  },
+  "myopia": {
+    "myopia_grade": 1,
+    "grade_label": "mild",
+    "confidence": 0.75,
+    "decision": "APPROVE"
+  },
+  "screening": {
+    "findings": [],
+    "urgent_diseases": [],
+    "total_diseases_detected": 0,
+    "recommendations": ["정기 안과 검진 권장"],
+    "referral_urgency": "routine",
+    "normal": true,
+    "top_findings": [],
+    "model_used": "multidisease_v1"
+  },
+  "heatmap": {
+    "glaucoma": {
+      "image_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "lesion_annotations": [
+        { "type": "cup_disc_asymmetry", "confidence": 0.85, "region": "optic_disc" }
+      ],
+      "hotspot_regions": ["cup_disc_asymmetry"]
+    }
+  },
+  "overall_assessment": {
+    "referral_urgency": "routine",
+    "primary_concern": "dr",
+    "findings": ["DR G1 — 경미"],
+    "recommendation": "6개월 후 재검 권장",
+    "inference_mode": "fast(v10)",
+    "inference_time_ms": 890
+  }
+}
