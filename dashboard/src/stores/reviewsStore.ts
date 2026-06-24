@@ -7,6 +7,7 @@ import { urgencyFromAssessment } from "../types/fundus";
 import {
   createSafeReviewStorage,
   REVIEW_STORAGE_KEY,
+  stripHeavyFromComprehensive,
   stripHeavyFromReviewItem,
   trimReviewQueue,
 } from "../utils/reviewsPersist";
@@ -45,7 +46,7 @@ export const useReviewsStore = create<ReviewsState>()(
     (set, get) => ({
       items: [],
 
-      enqueueFromFundus: (data, originalImages) => {
+      enqueueFromFundus: (data, _originalImages) => {
         const id = newLocalId();
         const item: ReviewListItem = {
           id,
@@ -53,8 +54,7 @@ export const useReviewsStore = create<ReviewsState>()(
           createdAt: data.analyzed_at ?? new Date().toISOString(),
           primaryConcern: primaryConcernFrom(data),
           status: "pending_review",
-          snapshot: data,
-          originalImages,
+          snapshot: stripHeavyFromComprehensive(data),
         };
         set((s) => ({ items: appendItem(s.items, item) }));
         return id;
@@ -74,15 +74,14 @@ export const useReviewsStore = create<ReviewsState>()(
         });
       },
 
-      attachSnapshot: (id, snapshot, images) => {
+      attachSnapshot: (id, snapshot, _images) => {
         set((s) => ({
           items: trimReviewQueue(
             s.items.map((it) =>
               it.id === id || it.apiReviewId === id
                 ? {
                     ...it,
-                    snapshot,
-                    originalImages: images ?? it.originalImages,
+                    snapshot: stripHeavyFromComprehensive(snapshot),
                     primaryConcern: primaryConcernFrom(snapshot),
                   }
                 : it,

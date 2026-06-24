@@ -10,7 +10,48 @@ export const REVIEW_STORAGE_KEY_LEGACY = "medi-portal-reviews";
 /** localStorage에 유지할 리뷰 큐 최대 건수 */
 export const MAX_REVIEW_QUEUE = 20;
 
+/** zustand partialize 와 동일한 persist envelope */
+export function buildPersistPayload(items: ReviewListItem[]): { state: { items: ReviewListItem[] } } {
+  return {
+    state: {
+      items: trimReviewQueue(items.map(stripHeavyFromReviewItem)),
+    },
+  };
+}
+
 type PersistEnvelope = { state?: { items?: ReviewListItem[] }; version?: number };
+
+const HEAVY_STRING_PREFIXES = ["data:image/", "data:application/"];
+const HEAVY_KEY_NAMES = new Set([
+  "image_base64",
+  "originalImages",
+  "originalImage",
+  "imageBase64",
+]);
+
+/** 대용량 data URL (10KB 초과) */
+function isHeavyDataUrl(value: string): boolean {
+  if (value.length <= 10_000) return false;
+  return HEAVY_STRING_PREFIXES.some((p) => value.startsWith(p));
+}
+
+/** 객체 트리 전체에서 base64·data URL·originalImages 제거 */
+export function deepStripHeavy<T>(value: T): T {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) {
+    return value.map((v) => deepStripHeavy(v)) as T;
+  }
+  if (typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      if (HEAVY_KEY_NAMES.has(key)) continue;
+      if (typeof val === "string" && isHeavyDataUrl(val)) continue;
+      out[key] = deepStripHeavy(val);
+    }
+    return out as T;
+  }
+  return value;
+}
 
 function stripHeatmapPayload(hm: HeatmapPayload | undefined): HeatmapPayload | undefined {
   if (!hm) return hm;
@@ -19,23 +60,25 @@ function stripHeatmapPayload(hm: HeatmapPayload | undefined): HeatmapPayload | u
 }
 
 function stripEyeResult(result: ComprehensiveResult): ComprehensiveResult {
-  if (!result.heatmap) return result;
+  const stripped = deepStripHeavy(result) as ComprehensiveResult;
+  if (!result.heatmap) return stripped;
   const heatmap = result.heatmap as Record<string, HeatmapPayload | undefined>;
-  const stripped: Record<string, HeatmapPayload | undefined> = {};
+  const next: Record<string, HeatmapPayload | undefined> = {};
   for (const [key, val] of Object.entries(heatmap)) {
-    stripped[key] = stripHeatmapPayload(val);
+    next[key] = stripHeatmapPayload(val);
   }
-  return { ...result, heatmap: stripped as ComprehensiveResult["heatmap"] };
+  return { ...stripped, heatmap: next as ComprehensiveResult["heatmap"] };
 }
 
-/** GradCAM base64 등 대용량 필드 제거 — persist 전용 */
+/** GradCAM base64 등 대용량 필드 제거 — persist + 메모리 큐 공용 */
 export function stripHeavyFromComprehensive(
   data: BilateralComprehensiveResult,
 ): BilateralComprehensiveResult {
+  const base = deepStripHeavy(data) as BilateralComprehensiveResult;
   return {
-    ...data,
-    os: data.os ? stripEyeResult(data.os) : data.os,
-    od: data.od ? stripEyeResult(data.od) : data.od,
+    ...base,
+    os: base.os ? stripEyeResult(base.os) : base.os,
+    od: base.od ? stripEyeResult(base.od) : base.od,
   };
 }
 
@@ -85,41 +128,58 @@ function isQuotaError(err: unknown): boolean {
   );
 }
 
-function trySetItem(base: Storage, key: string, value: string): boolean {
+function safeTrySetItem(base: Storage, key: string, value: string): boolean {
   try {
     base.setItem(key, value);
     return true;
   } catch (err) {
-    if (!isQuotaError(err)) throw err;
+    if (!isQuotaError(err)) {
+      console.warn("[reviewsPersist] setItem non-quota error (ignored):", err);
+    }
     return false;
   }
 }
 
+/** 1→1건→0건→removeItem, 절대 throw 하지 않음 */
 function shrinkAndRetrySet(base: Storage, key: string, value: string): void {
   clearLegacyReviewStorage();
 
-  if (trySetItem(base, key, value)) return;
+  const stripped = (() => {
+    try {
+      const parsed = JSON.parse(value) as PersistEnvelope;
+      return JSON.stringify(migratePersistEnvelope(parsed));
+    } catch {
+      return value;
+    }
+  })();
+
+  if (safeTrySetItem(base, key, stripped)) return;
 
   try {
-    const parsed = JSON.parse(value) as PersistEnvelope;
+    const parsed = JSON.parse(stripped) as PersistEnvelope;
     const items = parsed?.state?.items;
-    if (!Array.isArray(items)) return;
+    if (!Array.isArray(items)) {
+      safeTrySetItem(base, key, JSON.stringify({ state: { items: [] }, version: 0 }));
+      return;
+    }
 
-    for (const keep of [10, 5, 2, 1, 0]) {
+    for (const keep of [1, 0]) {
       parsed.state = {
         ...parsed.state,
         items: items.slice(0, keep).map(stripHeavyFromReviewItem),
       };
-      if (trySetItem(base, key, JSON.stringify(parsed))) return;
+      parsed.version = parsed.version ?? 0;
+      if (safeTrySetItem(base, key, JSON.stringify(parsed))) return;
     }
-  } catch {
-    /* parse/trim 실패 — 조용히 스킵 */
+  } catch (err) {
+    console.warn("[reviewsPersist] shrink parse failed (ignored):", err);
   }
 
   try {
     base.removeItem(key);
-  } catch {
-    /* ignore */
+    clearLegacyReviewStorage();
+  } catch (err) {
+    console.warn("[reviewsPersist] removeItem failed (ignored):", err);
   }
 }
 
@@ -132,34 +192,39 @@ export function createSafeReviewStorage(): Storage {
       return base.length;
     },
     clear(): void {
-      base.clear();
+      try {
+        base.clear();
+      } catch (err) {
+        console.warn("[reviewsPersist] clear failed (ignored):", err);
+      }
     },
     getItem(key: string): string | null {
-      clearLegacyReviewStorage();
+      try {
+        clearLegacyReviewStorage();
 
-      let raw = base.getItem(key);
-      if (!raw && key === REVIEW_STORAGE_KEY) {
-        raw = base.getItem(REVIEW_STORAGE_KEY_LEGACY);
-        if (raw) {
-          try {
-            base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
-          } catch {
-            /* ignore */
+        let raw = base.getItem(key);
+        if (!raw && key === REVIEW_STORAGE_KEY) {
+          raw = base.getItem(REVIEW_STORAGE_KEY_LEGACY);
+          if (raw) {
+            try {
+              base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
+            } catch {
+              /* ignore */
+            }
           }
         }
-      }
 
-      if (!raw) return null;
+        if (!raw) return null;
 
-      try {
         const parsed = JSON.parse(raw) as PersistEnvelope;
         const migrated = serializeMigrated(parsed);
         if (migrated.length < raw.length) {
-          trySetItem(base, key, migrated);
+          safeTrySetItem(base, key, migrated);
           clearLegacyReviewStorage();
         }
         return migrated;
-      } catch {
+      } catch (err) {
+        console.warn("[reviewsPersist] getItem failed, clearing key:", err);
         try {
           base.removeItem(key);
           base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
@@ -173,8 +238,12 @@ export function createSafeReviewStorage(): Storage {
       return base.key(index);
     },
     removeItem(key: string): void {
-      base.removeItem(key);
-      if (key === REVIEW_STORAGE_KEY) clearLegacyReviewStorage();
+      try {
+        base.removeItem(key);
+        if (key === REVIEW_STORAGE_KEY) clearLegacyReviewStorage();
+      } catch (err) {
+        console.warn("[reviewsPersist] removeItem failed (ignored):", err);
+      }
     },
     setItem(key: string, value: string): void {
       shrinkAndRetrySet(base, key, value);

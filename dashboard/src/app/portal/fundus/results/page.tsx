@@ -28,8 +28,16 @@ export default function FundusResultsPage() {
   useEffect(() => {
     if (!results?.analyzed_at) return;
     if (enqueuedRef.current === results.analyzed_at) return;
-    enqueueFromFundus(results, originalImages);
-    recordPipelineFromResults(results);
+    try {
+      enqueueFromFundus(results, originalImages);
+    } catch (err) {
+      console.warn("[FundusResults] reviews 큐 저장 실패 (분석 결과 표시는 계속):", err);
+    }
+    try {
+      recordPipelineFromResults(results);
+    } catch (err) {
+      console.warn("[FundusResults] audit 기록 실패 (ignored):", err);
+    }
     for (const [eye, eyeResult] of [
       ["OS", results.os],
       ["OD", results.od],
