@@ -6,11 +6,12 @@ import type { ReviewApiStatus, ReviewListItem } from "../types/clinical";
 import { urgencyFromAssessment } from "../types/fundus";
 import {
   createSafeReviewStorage,
+  REVIEW_STORAGE_KEY,
   stripHeavyFromReviewItem,
   trimReviewQueue,
 } from "../utils/reviewsPersist";
 
-const STORAGE_KEY = "medi-portal-reviews";
+const STORAGE_KEY = REVIEW_STORAGE_KEY;
 
 interface ReviewsState {
   items: ReviewListItem[];

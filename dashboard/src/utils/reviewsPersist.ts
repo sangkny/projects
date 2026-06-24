@@ -1,8 +1,16 @@
 import type { BilateralComprehensiveResult, ComprehensiveResult, HeatmapPayload } from "../types/fundus";
 import type { ReviewListItem } from "../types/clinical";
 
+/** localStorage persist key (v2 — v1 legacy key는 자동 폐기) */
+export const REVIEW_STORAGE_KEY = "medi-portal-reviews-v2";
+
+/** @deprecated v1 — getItem/setItem 시 제거·마이그레이션 대상 */
+export const REVIEW_STORAGE_KEY_LEGACY = "medi-portal-reviews";
+
 /** localStorage에 유지할 리뷰 큐 최대 건수 */
 export const MAX_REVIEW_QUEUE = 20;
+
+type PersistEnvelope = { state?: { items?: ReviewListItem[] }; version?: number };
 
 function stripHeatmapPayload(hm: HeatmapPayload | undefined): HeatmapPayload | undefined {
   if (!hm) return hm;
@@ -44,7 +52,78 @@ export function trimReviewQueue(items: ReviewListItem[]): ReviewListItem[] {
   return items.slice(0, MAX_REVIEW_QUEUE);
 }
 
-/** QuotaExceeded 시 오래된 항목 제거 후 재시도, 실패 시 조용히 스킵 */
+function migratePersistEnvelope(parsed: PersistEnvelope): PersistEnvelope {
+  const items = parsed.state?.items;
+  if (!Array.isArray(items)) return parsed;
+  return {
+    ...parsed,
+    state: {
+      ...parsed.state,
+      items: trimReviewQueue(items.map(stripHeavyFromReviewItem)),
+    },
+  };
+}
+
+function serializeMigrated(parsed: PersistEnvelope): string {
+  return JSON.stringify(migratePersistEnvelope(parsed));
+}
+
+/** legacy v1 키 제거 — quota 확보 */
+export function clearLegacyReviewStorage(): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(REVIEW_STORAGE_KEY_LEGACY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function isQuotaError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    (err.name === "QuotaExceededError" || err.code === 22 || err.code === 1014)
+  );
+}
+
+function trySetItem(base: Storage, key: string, value: string): boolean {
+  try {
+    base.setItem(key, value);
+    return true;
+  } catch (err) {
+    if (!isQuotaError(err)) throw err;
+    return false;
+  }
+}
+
+function shrinkAndRetrySet(base: Storage, key: string, value: string): void {
+  clearLegacyReviewStorage();
+
+  if (trySetItem(base, key, value)) return;
+
+  try {
+    const parsed = JSON.parse(value) as PersistEnvelope;
+    const items = parsed?.state?.items;
+    if (!Array.isArray(items)) return;
+
+    for (const keep of [10, 5, 2, 1, 0]) {
+      parsed.state = {
+        ...parsed.state,
+        items: items.slice(0, keep).map(stripHeavyFromReviewItem),
+      };
+      if (trySetItem(base, key, JSON.stringify(parsed))) return;
+    }
+  } catch {
+    /* parse/trim 실패 — 조용히 스킵 */
+  }
+
+  try {
+    base.removeItem(key);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** QuotaExceeded 시 legacy 제거 + trim 재시도; getItem 시 strip 마이그레이션 */
 export function createSafeReviewStorage(): Storage {
   const base = localStorage;
 
@@ -56,46 +135,53 @@ export function createSafeReviewStorage(): Storage {
       base.clear();
     },
     getItem(key: string): string | null {
-      return base.getItem(key);
+      clearLegacyReviewStorage();
+
+      let raw = base.getItem(key);
+      if (!raw && key === REVIEW_STORAGE_KEY) {
+        raw = base.getItem(REVIEW_STORAGE_KEY_LEGACY);
+        if (raw) {
+          try {
+            base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
+      if (!raw) return null;
+
+      try {
+        const parsed = JSON.parse(raw) as PersistEnvelope;
+        const migrated = serializeMigrated(parsed);
+        if (migrated.length < raw.length) {
+          trySetItem(base, key, migrated);
+          clearLegacyReviewStorage();
+        }
+        return migrated;
+      } catch {
+        try {
+          base.removeItem(key);
+          base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
+        } catch {
+          /* ignore */
+        }
+        return null;
+      }
     },
     key(index: number): string | null {
       return base.key(index);
     },
     removeItem(key: string): void {
       base.removeItem(key);
+      if (key === REVIEW_STORAGE_KEY) clearLegacyReviewStorage();
     },
     setItem(key: string, value: string): void {
-      try {
-        base.setItem(key, value);
-        return;
-      } catch (err) {
-        if (!isQuotaError(err)) throw err;
-      }
-
-      try {
-        const parsed = JSON.parse(value) as { state?: { items?: ReviewListItem[] }; version?: number };
-        const items = parsed?.state?.items;
-        if (!Array.isArray(items)) return;
-
-        for (const keep of [10, 5, 2, 1, 0]) {
-          parsed.state = { ...parsed.state, items: items.slice(0, keep).map(stripHeavyFromReviewItem) };
-          try {
-            base.setItem(key, JSON.stringify(parsed));
-            return;
-          } catch (retryErr) {
-            if (!isQuotaError(retryErr)) throw retryErr;
-          }
-        }
-      } catch {
-        /* parse/trim 실패 — 조용히 스킵 */
-      }
+      shrinkAndRetrySet(base, key, value);
     },
   };
 }
 
-function isQuotaError(err: unknown): boolean {
-  return (
-    err instanceof DOMException &&
-    (err.name === "QuotaExceededError" || err.code === 22 || err.code === 1014)
-  );
+if (typeof window !== "undefined") {
+  clearLegacyReviewStorage();
 }

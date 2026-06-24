@@ -117,42 +117,12 @@ test.describe("Portal E2E — DASHBOARD-UX-SPEC 6시나리오", () => {
   });
 
   test("6. reviews 화면 APPROVE 처리", async ({ page }) => {
-    const reviewItem = {
-      id: "e2e-review-1",
-      patientId: "E2E-PATIENT",
-      createdAt: new Date().toISOString(),
-      primaryConcern: "dr",
-      status: "pending_review",
-      snapshot: {
-        patient_id: "E2E-PATIENT",
-        analyzed_at: new Date().toISOString(),
-        os: comprehensiveFixture,
-      },
-      originalImages: {
-        os: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-      },
-    };
-    await page.addInitScript(
-      ({ session, reviews }) => {
-        localStorage.setItem("medi-portal-session", JSON.stringify(session));
-        localStorage.setItem(
-          "medi-portal-reviews",
-          JSON.stringify({ state: { items: [reviews] }, version: 0 }),
-        );
-      },
-      {
-        session: {
-          state: {
-            session: { accessToken: "e2e-mock-token", userId: "doctor", role: "doctor" },
-            role: "doctor",
-            token: "e2e-mock-token",
-          },
-          version: 0,
-        },
-        reviews: reviewItem,
-      },
-    );
     await page.goto("portal/reviews");
+    await page.evaluate(() => {
+      localStorage.removeItem("medi-portal-reviews");
+      (window as unknown as { __seedE2eReview?: () => string }).__seedE2eReview?.();
+    });
+    await page.reload();
     await expect(page.getByRole("heading", { name: /진단 리뷰/i })).toBeVisible();
     await expect(page.getByText("E2E-PATIENT")).toBeVisible();
     await page.getByTestId("review-decision-APPROVE").click();
