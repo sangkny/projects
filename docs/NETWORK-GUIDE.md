@@ -102,6 +102,25 @@ LLM_SUMMARY_BASE_URL: http://host.docker.internal:1234/v1
 
 ---
 
+## §8. Dashboard 접속 포트 (MEDI-IOT)
+
+| URL | 제공 | 비고 |
+|-----|------|------|
+| `http://localhost:3000/dashboard/` | Docker `dashboard-dev` (nginx) | **정식 빌드** · `docker compose build dashboard` 산출물 |
+| `http://localhost:8090/dashboard/` | Docker `api-gateway-dev` | 게이트웨이 경유 (호스트 **8090** 바인딩 필요) |
+| `http://localhost:5174/dashboard/` | Vite dev (`npm run dev`) | compose **외부** · store/persist 변경 시 **재시작** |
+
+| 호스트 | 서비스 | 용도 |
+|--------|--------|------|
+| **3000** | `dashboard` | Dashboard nginx (80) |
+| **3001** | `grafana` | Grafana (내부 3000) |
+| **3010** | `openclaw` | OpenClaw Agent Runtime |
+| **8090** | `api-gateway` | API + `/dashboard/` 프록시 |
+
+상세: `projects/PORT-ALLOCATION.md` · `dashboard/vite.config.ts` (5174)
+
+---
+
 ## 관련 문서
 
 - `projects/PORT-ALLOCATION.md` — 포트 배정 · SVG-Stock 경고

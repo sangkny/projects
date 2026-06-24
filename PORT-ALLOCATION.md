@@ -70,6 +70,18 @@
 | **9011** | 9001 |
 | **9091** | 9090 |
 
+#### MEDI-IOT — 호스트 포트 ↔ 서비스 (docker-compose.dev.yml SSOT)
+
+| 호스트 | 컨테이너 | 서비스 | 컨테이너명 | 용도 |
+|--------|---------|--------|-----------|------|
+| **3000** | 80 | `dashboard` | dashboard-dev | React Dashboard **nginx** (빌드 산출물 `/dashboard/`) |
+| **3001** | 3000 | `grafana` | grafana-dev | Grafana UI (3000은 dashboard가 점유) |
+| **3010** | 3000 | `openclaw` | openclaw-runtime | OpenClaw Agent Runtime (Node) |
+| **8090** | 80 | `api-gateway` | api-gateway-dev | Nginx API 게이트웨이 · **`/dashboard/`** → dashboard 프록시 |
+| **5174** | — | *(compose 외부)* | — | Dashboard **Vite dev** (`cd dashboard && npm run dev`) |
+
+> **QuotaExceeded / persist 수정 검증**: Docker 정식 빌드는 **`http://localhost:3000/dashboard/`** (또는 api-gateway 포트 바인딩 시 `8090/dashboard/`). **5174**는 별도 dev 프로세스 — 코드·store 변경 후 **Vite 재시작** 필요.
+
 ### SVG-New-Bot
 > 챗봇 플랫폼  
 > 경로: `/mnt/d/sangkny/work/doc/external_activity/SVG-New-Bot/`
