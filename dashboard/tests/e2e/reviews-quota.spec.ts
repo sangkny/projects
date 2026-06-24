@@ -67,6 +67,7 @@ test.describe("reviews persist — QuotaExceeded 방지", () => {
     await page.addInitScript(() => {
       localStorage.removeItem("medi-portal-reviews");
       localStorage.removeItem("medi-portal-reviews-v2");
+      localStorage.removeItem("medi-portal-reviews-v3");
     });
 
     await page.route("**/api/v1/lab/fundus/comprehensive**", async (route) => {
@@ -141,7 +142,7 @@ test.describe("reviews persist — QuotaExceeded 방지", () => {
     const quotaErrors = consoleErrors.filter((t) => /QuotaExceeded|setItem on 'Storage'/i.test(t));
     expect(quotaErrors, quotaErrors.join("\n")).toHaveLength(0);
 
-    const stored = await page.evaluate(() => localStorage.getItem("medi-portal-reviews-v2")?.length ?? 0);
+    const stored = await page.evaluate(() => localStorage.getItem("medi-portal-reviews-v3")?.length ?? 0);
     if (stored > 0) {
       expect(stored).toBeLessThan(200_000);
     }

@@ -1,11 +1,14 @@
 import type { BilateralComprehensiveResult, ComprehensiveResult, HeatmapPayload } from "../types/fundus";
 import type { ReviewListItem } from "../types/clinical";
 
-/** localStorage persist key (v2 — v1 legacy key는 자동 폐기) */
-export const REVIEW_STORAGE_KEY = "medi-portal-reviews-v2";
+/** localStorage persist key (v3 — v1/v2 legacy 자동 폐기) */
+export const REVIEW_STORAGE_KEY = "medi-portal-reviews-v3";
 
 /** @deprecated v1 — getItem/setItem 시 제거·마이그레이션 대상 */
 export const REVIEW_STORAGE_KEY_LEGACY = "medi-portal-reviews";
+
+/** @deprecated v2 */
+export const REVIEW_STORAGE_KEY_V2 = "medi-portal-reviews-v2";
 
 /** localStorage에 유지할 리뷰 큐 최대 건수 */
 export const MAX_REVIEW_QUEUE = 20;
@@ -111,13 +114,15 @@ function serializeMigrated(parsed: PersistEnvelope): string {
   return JSON.stringify(migratePersistEnvelope(parsed));
 }
 
-/** legacy v1 키 제거 — quota 확보 */
+/** legacy v1/v2 키 제거 — quota 확보 (앱 시작 시 1회) */
 export function clearLegacyReviewStorage(): void {
   if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.removeItem(REVIEW_STORAGE_KEY_LEGACY);
-  } catch {
-    /* ignore */
+  for (const key of [REVIEW_STORAGE_KEY_LEGACY, REVIEW_STORAGE_KEY_V2]) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -204,12 +209,15 @@ export function createSafeReviewStorage(): Storage {
 
         let raw = base.getItem(key);
         if (!raw && key === REVIEW_STORAGE_KEY) {
-          raw = base.getItem(REVIEW_STORAGE_KEY_LEGACY);
-          if (raw) {
-            try {
-              base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
-            } catch {
-              /* ignore */
+          for (const legacyKey of [REVIEW_STORAGE_KEY_LEGACY, REVIEW_STORAGE_KEY_V2]) {
+            raw = base.getItem(legacyKey);
+            if (raw) {
+              try {
+                base.removeItem(legacyKey);
+              } catch {
+                /* ignore */
+              }
+              break;
             }
           }
         }
@@ -228,6 +236,7 @@ export function createSafeReviewStorage(): Storage {
         try {
           base.removeItem(key);
           base.removeItem(REVIEW_STORAGE_KEY_LEGACY);
+          base.removeItem(REVIEW_STORAGE_KEY_V2);
         } catch {
           /* ignore */
         }

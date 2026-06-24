@@ -5,12 +5,12 @@ import type { BilateralComprehensiveResult } from "../types/fundus";
 import type { ReviewApiStatus, ReviewListItem } from "../types/clinical";
 import { urgencyFromAssessment } from "../types/fundus";
 import {
-  createSafeReviewStorage,
   REVIEW_STORAGE_KEY,
   stripHeavyFromComprehensive,
   stripHeavyFromReviewItem,
   trimReviewQueue,
 } from "../utils/reviewsPersist";
+import { createNeverThrowReviewStorage } from "../utils/reviewsStorageAdapter";
 
 const STORAGE_KEY = REVIEW_STORAGE_KEY;
 
@@ -56,7 +56,11 @@ export const useReviewsStore = create<ReviewsState>()(
           status: "pending_review",
           snapshot: stripHeavyFromComprehensive(data),
         };
-        set((s) => ({ items: appendItem(s.items, item) }));
+        try {
+          set((s) => ({ items: appendItem(s.items, item) }));
+        } catch (err) {
+          console.warn("[reviewsStore] enqueue persist failed (ignored):", err);
+        }
         return id;
       },
 
@@ -136,7 +140,7 @@ export const useReviewsStore = create<ReviewsState>()(
     }),
     {
       name: STORAGE_KEY,
-      storage: createJSONStorage(() => createSafeReviewStorage()),
+      storage: createJSONStorage(() => createNeverThrowReviewStorage()),
       partialize: (state) => ({
         items: trimReviewQueue(state.items.map(stripHeavyFromReviewItem)),
       }),

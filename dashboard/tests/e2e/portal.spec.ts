@@ -120,6 +120,7 @@ test.describe("Portal E2E — DASHBOARD-UX-SPEC 6시나리오", () => {
     await page.goto("portal/reviews");
     await page.evaluate(() => {
       localStorage.removeItem("medi-portal-reviews");
+      localStorage.removeItem("medi-portal-reviews-v2");
       (window as unknown as { __seedE2eReview?: () => string }).__seedE2eReview?.();
     });
     await page.reload();
