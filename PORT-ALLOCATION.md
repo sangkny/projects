@@ -146,6 +146,15 @@
 | **3100** | 3100 |
 | **5453** | 5432 |
 
+### medi-audit-engine
+> 임상시험 Audit Trail + 계산식 버전 관리 (MEDI-IOT-EyeCare와 독립)  
+> 경로: `/mnt/e/Office_Automation/idea-collection/projects/medi-audit-engine/`
+
+| 호스트 포트 | 컨테이너 포트 | 서비스 |
+|------------|-------------|--------|
+| **5454** | 5432 | audit-postgres |
+| **8500** | 8000 | audit-api |
+
 ---
 
 ## 동시 실행 가능 조합
