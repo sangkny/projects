@@ -1,6 +1,6 @@
 # 개발 PC 전체 Docker 포트 배정표
 
-> **자동 생성**: 2026-06-11 — `bash scripts/update_port_allocation.sh`
+> **자동 생성**: 2026-07-15 — `bash scripts/update_port_allocation.sh`
 > **SSOT**: 각 프로젝트 `docker-compose.yml` (실제 포트 기준)
 > **수정 방법**: docker-compose.yml 수정 후 이 스크립트 재실행
 > **마스터 위치**: `projects/PORT-ALLOCATION.md`
@@ -9,7 +9,9 @@
 
 ## ⚠️ 충돌 현황
 
-✅ **MEDI-IOT compose 포트** — Docker 프로젝트 간 호스트 포트 충돌 없음
+| 포트 | 충돌 프로젝트 |
+|------|-------------|
+| **8501** | tacr-eval vs SVG-Stock |
 
 ## 외부 서비스 (Docker 외부)
 
@@ -70,18 +72,6 @@
 | **9011** | 9001 |
 | **9091** | 9090 |
 
-#### MEDI-IOT — 호스트 포트 ↔ 서비스 (docker-compose.dev.yml SSOT)
-
-| 호스트 | 컨테이너 | 서비스 | 컨테이너명 | 용도 |
-|--------|---------|--------|-----------|------|
-| **3000** | 80 | `dashboard` | dashboard-dev | React Dashboard **nginx** (빌드 산출물 `/dashboard/`) |
-| **3001** | 3000 | `grafana` | grafana-dev | Grafana UI (3000은 dashboard가 점유) |
-| **3010** | 3000 | `openclaw` | openclaw-runtime | OpenClaw Agent Runtime (Node) |
-| **8090** | 80 | `api-gateway` | api-gateway-dev | Nginx API 게이트웨이 · **`/dashboard/`** → dashboard 프록시 |
-| **5174** | — | *(compose 외부)* | — | Dashboard **Vite dev** (`cd dashboard && npm run dev`) |
-
-> **QuotaExceeded / persist 수정 검증**: Docker 정식 빌드는 **`http://localhost:3000/dashboard/`** (또는 api-gateway 포트 바인딩 시 `8090/dashboard/`). **5174**는 별도 dev 프로세스 — 코드·store 변경 후 **Vite 재시작** 필요.
-
 ### SVG-New-Bot
 > 챗봇 플랫폼  
 > 경로: `/mnt/d/sangkny/work/doc/external_activity/SVG-New-Bot/`
@@ -105,7 +95,7 @@
 | **5434** | 5432 |
 | **5678** | 5678 |
 | **8000** | 8000 |
-| **8501** | 8501 |
+| **8501** ⚠️ | 8501 |
 | **9000** | 9000 |
 | **9001** | 9001 |
 | **26379** | 6379 |
@@ -118,7 +108,7 @@
 |------------|-------------|
 | **5000** | 5000 |
 | **5173** | 5173 |
-| **11435** | 11434 |
+| **5432** | 5432 |
 
 ### fin-stat
 > 재무 분석  
@@ -155,6 +145,29 @@
 | **5454** | 5432 | audit-postgres |
 | **8500** | 8000 | audit-api |
 
+### eyecare-platform
+> 안과병원 B2B + 안경점 Wellness 공유 백엔드 (멀티테넌트)  
+> 경로: `/mnt/e/Office_Automation/idea-collection/projects/eyecare-platform/`  
+> 추가일: **2026-08-09**
+
+| 호스트 포트 | 컨테이너 포트 | 서비스 | 용도 |
+|------------|-------------|--------|------|
+| **8211** | 8000 | eyecare-api | 인증·조직/환자·스크리닝 API |
+| **8210** | 8000 | eyecare-ai-inference | retinal ONNX 추론 서빙 |
+| **5455** | 5432 | eyecare-postgres | 플랫폼 DB |
+| **6380** | 6379 | eyecare-redis | Celery/RQ 큐·캐시 |
+
+> worker는 외부 포트 없음 (내부 Redis만 사용).  
+> 참고: 후보 8110/8111/8120은 Docker Desktop 포트 포워딩 오류로 **8210/8211** 확정 (2026-08-09).
+
+### tacr-eval
+> TA CR 제안서 자동 평가 시스템 (Streamlit + Gemini) — SVG-Stock과 8501 겹침, 동시 실행 불가  
+> 경로: `/mnt/d/sangkny/work/doc/external_activity/TACR/SW/tacr-eval/`
+
+| 호스트 포트 | 컨테이너 포트 |
+|------------|-------------|
+| **8501** ⚠️ | 8501 |
+
 ---
 
 ## 동시 실행 가능 조합
@@ -165,7 +178,9 @@
 | MEDI-IOT + pronunciation | ✅ 가능 | — |
 | MEDI-IOT + paperclip | ✅ 가능 | — |
 | MEDI-IOT + proposal | ✅ 가능 | — |
+| MEDI-IOT + tacr-eval | ✅ 가능 | 포트 분리됨 |
 | SVG-Stock + 다른 프로젝트 | ⚠️ 주의 | 80/9000/8000 점유 — 단독 실행 권장 |
+| SVG-Stock + tacr-eval | ❌ 불가 | 둘 다 **8501** 사용 — 동시 실행 금지, 한쪽을 내리고 실행 |
 | LM Studio + SVG-Stock | ⚠️ 주의 | LM Studio는 **1234** (SVG-Stock이 8000 점유) |
 
 ---
